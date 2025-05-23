@@ -21,7 +21,27 @@
     <script>
         const form = document.getElementById("uploadForm");
         const resultDiv = document.getElementById("result");
-        const analysisPre = document.getElementById("analysisText");
+        const analysisPre = docum
+   
+            // Umožňí vložení obrázku pomocí Ctrl+V
+    document.addEventListener('paste', (event) => {
+        const items = event.clipboardData.items;
+        for (const item of items) {
+            if (item.type.indexOf('image') !== -1) {
+                const file = item.getAsFile();
+                if (file) {
+                    const dt = new DataTransfer();
+                    dt.items.add(file);
+                    document.getElementById('imageInput').files = dt.files;
+                    // Skryjeme starý výsledek, pokud nějaký je
+                    resultDiv.classList.add('hidden');
+                    analysisPre.textContent = '';
+                }
+                break;
+            }
+        }
+    });
+ent.getElementById("analysisText");
 
         form.addEventListener("submit", async (e) => {
             e.preventDefault();
