@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8" />
+    <title>Politweet Asistent</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <h1>Politweet Asistent</h1>
+
+    <form id="uploadForm">
+        <input type="file" id="imageInput" name="image" accept="image/*" required />
+        <button type="submit">Analyzovat tweet</button>
+    </form>
+
+    <div id="result" class="hidden">
+        <h2>Výsledek analýzy</h2>
+        <pre id="analysisText"></pre>
+    </div>
+
+    <script>
+        const form = document.getElementById("uploadForm");
+        const resultDiv = document.getElementById("result");
+        const analysisPre = document.getElementById("analysisText");
+
+        form.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const fileInput = document.getElementById("imageInput");
+            const file = fileInput.files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append("image", file);
+
+            analysisPre.textContent = "Probíhá analýza…";
+            resultDiv.classList.remove("hidden");
+
+            try {
+                const response = await fetch("/analyze", {
+                    method: "POST",
+                    body: formData,
+                });
+                const data = await response.json();
+                if (data.analysis) {
+                    analysisPre.textContent = data.analysis;
+                } else {
+                    analysisPre.textContent = "Chyba: " + (data.error || "Neznámá chyba");
+                }
+            } catch (err) {
+                analysisPre.textContent = "Chyba požadavku: " + err;
+            }
+        });
+    </script>
+</body>
+</html>
