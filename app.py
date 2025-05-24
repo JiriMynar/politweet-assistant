@@ -12,7 +12,11 @@ openai.api_key = os.getenv("OPENAI_API_KEY")
 app = Flask(__name__)
 
 # rate-limit: max 10 požadavků za minutu z jedné IP
-limiter = Limiter(app, key_func=get_remote_address, default_limits=["10 per minute"])
+limiter = Limiter(
+    key_func=get_remote_address,
+    default_limits=["10 per minute"]
+)
+limiter.init_app(app)
 
 def image_to_base64(file_storage) -> str:
     """Převede obrázek (werkzeug FileStorage) na base64 PNG řetězec."""
