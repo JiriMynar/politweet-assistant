@@ -1,84 +1,53 @@
 <!DOCTYPE html>
-
-            }<html lang="cs">
+<html lang="cs">
 <head>
   <meta charset="UTF-8">
-  <title>Analýza obrázku</title>
-  <!-- Pokud používáte externí soubor stylů, odkomentujte následující řádek a vložte CSS do static/style.css -->
-  <!-- <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"> -->
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      max-width: 700px;
-      margin: 40px auto;
-    }
-
-    .hidden { display: none; }
-
-    #loader {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-top: 10px;
-
-                #loader.hidden {
-                display: none;}
-
-    .spinner {
-      width: 18px;
-      height: 18px;
-      border: 3px solid #ddd;
-      border-top-color: #6b46c1; /* fialová */
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-    }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-
-    #result {
-      border: 1px solid #eee;
-      padding: 12px;
-      margin-top: 16px;
-      background: #fafafa;
-    }
-  </style>
+  <title>Politweet Assistant</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 <body>
-  <h1>Analýza obrázku</h1>
+  <main class="card">
+    <h1>Politweet Assistant</h1>
+    <p>Nahraj obrázek tweetu politika a získej rychlé ověření faktů.</p>
 
-  <form id="uploadForm">
-    <input type="file" id="imageInput" name="image" accept="image/*" required>
-    <button type="submit">Analyzovat</button>
-  </form>
+    <form id="uploadForm">
+      <input type="file" id="imageInput" name="image" accept="image/*" required>
+      <button type="submit" id="submitBtn">Analyzovat</button>
+    </form>
 
-  <!-- Loader (skryto, zobrazí se při analýze) -->
-  <div id="loader" class="hidden">
-    <div class="spinner"></div>
-    <span>Probíhá analýza…</span>
-  </div>
+    <div id="loader" class="hidden loader">
+      <div class="spinner"></div>
+      <span>Probíhá analýza…</span>
+    </div>
 
-  <!-- Výsledek analýzy -->
-  <div id="result" class="hidden">
-    <pre id="analysisPre"></pre>
-  </div>
+    <div id="result" class="hidden result">
+      <h2>Výsledek</h2>
+      <pre id="analysisPre"></pre>
+    </div>
+  </main>
+
+  <footer>
+    <p>© 2025 Politweet Assistant</p>
+  </footer>
 
   <script>
-    const form = document.getElementById('uploadForm');
+    const form       = document.getElementById('uploadForm');
     const imageInput = document.getElementById('imageInput');
     const analysisPre = document.getElementById('analysisPre');
-    const resultDiv = document.getElementById('result');
-    const loader = document.getElementById('loader');
-    const submitBtn = form.querySelector('button[type="submit"]');
+    const resultDiv  = document.getElementById('result');
+    const loader     = document.getElementById('loader');
+    const submitBtn  = document.getElementById('submitBtn');
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       if (!imageInput.files.length) return;
 
-      loader.classList.remove('hidden');   // zobrazit spinner
-      resultDiv.classList.add('hidden');   // schovat starý výsledek
-      submitBtn.disabled = true;           // zneaktivnit tlačítko
+      loader.classList.remove('hidden');
+      resultDiv.classList.add('hidden');
+      submitBtn.disabled = true;
 
       try {
         const formData = new FormData();
@@ -89,19 +58,20 @@
           body: formData
         });
 
+        const data = await response.json();
+
         if (!response.ok) {
-          throw new Error('Chyba serveru: ' + response.status);
+          throw new Error(data.error || 'Chyba serveru');
         }
 
-        const data = await response.json();
-        analysisPre.textContent = data.analysis || ('Chyba: ' + (data.error || 'Neznámá chyba'));
+        analysisPre.textContent = data.analysis;
         resultDiv.classList.remove('hidden');
       } catch (err) {
         analysisPre.textContent = 'Chyba: ' + err.message;
         resultDiv.classList.remove('hidden');
       } finally {
-        loader.classList.add('hidden');    // skrýt spinner
-        submitBtn.disabled = false;        // znovu povolit tlačítko
+        loader.classList.add('hidden');
+        submitBtn.disabled = false;
       }
     });
   </script>
