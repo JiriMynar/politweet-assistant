@@ -4,11 +4,9 @@
   <meta charset="UTF-8" />
   <title>Politweet Assistant</title>
 
-  <!-- Google Fonts + hlavní stylesheet -->
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
   <link rel="preconnect" href="https://fonts.gstatic.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
-
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 </head>
 
@@ -19,24 +17,27 @@
 
     <!-- DROP / PASTE ZÓNA -->
     <div id="dropZone" tabindex="0">
-      <span class="dz-icon">📋</span>
-      <span id="dzText">Sem přetáhni obrázek nebo stiskni Ctrl + V</span>
+      <!-- náhled obrázku -->
+      <img id="preview" class="preview hidden" alt="Náhled obrázku" />
 
-      <!-- viditelný pseudo-button pro ruční výběr -->
-      <span class="dz-pick">Vybrat soubor…</span>
+      <!-- překryv s ikonou a textem -->
+      <div class="dz-content">
+        <span class="dz-icon">📋</span>
+        <span id="dzText">Sem přetáhni obrázek nebo stiskni Ctrl + V</span>
+        <span class="dz-pick">Vybrat soubor…</span>
+      </div>
 
+      <!-- skutečný input -->
       <input type="file" id="imageInput" name="image" accept="image/*" hidden />
     </div>
 
     <button id="submitBtn" disabled>Analyzovat</button>
 
-    <!-- loader -->
     <div id="loader" class="hidden loader">
       <div class="spinner"></div>
       <span>Probíhá analýza…</span>
     </div>
 
-    <!-- výsledek -->
     <div id="result" class="hidden result">
       <h2>Výsledek</h2>
       <table id="analysisTable"></table>
