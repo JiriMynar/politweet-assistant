@@ -1,80 +1,106 @@
 <!DOCTYPE html>
 <html lang="cs">
 <head>
-    <meta charset="UTF-8" />
-    <title>Politweet Asistent</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <meta charset="UTF-8">
+  <title>Analýza obrázku</title>
+  <!-- Pokud používáte externí soubor stylů, odkomentujte následující řádek a vložte CSS do static/style.css -->
+  <!-- <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"> -->
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 700px;
+      margin: 40px auto;
+    }
+
+    .hidden { display: none; }
+
+    #loader {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .spinner {
+      width: 18px;
+      height: 18px;
+      border: 3px solid #ddd;
+      border-top-color: #6b46c1; /* fialová */
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    #result {
+      border: 1px solid #eee;
+      padding: 12px;
+      margin-top: 16px;
+      background: #fafafa;
+    }
+  </style>
 </head>
 <body>
-    <h1>Politweet Asistent</h1>
+  <h1>Analýza obrázku</h1>
 
-    <form id="uploadForm">
-        <input type="file" id="imageInput" name="image" accept="image/*" required />
-        <button type="submit">Analyzovat tweet</button>
-    </form>
+  <form id="uploadForm">
+    <input type="file" id="imageInput" name="image" accept="image/*" required>
+    <button type="submit">Analyzovat</button>
+  </form>
 
-    <div id="result" class="hidden">
-        <h2>Výsledek analýzy</h2>
-        <pre id="analysisText"></pre>
-    </div>
+  <!-- Loader (skryto, zobrazí se při analýze) -->
+  <div id="loader" class="hidden">
+    <div class="spinner"></div>
+    <span>Probíhá analýza…</span>
+  </div>
 
-    <script>
-        const form = document.getElementById("uploadForm");
-        const resultDiv = document.getElementById("result");
-        const analysisPre = docum
-   
-            // Umožňí vložení obrázku pomocí Ctrl+V
-    document.addEventListener('paste', (event) => {
-        const items = event.clipboardData.items;
-        for (const item of items) {
-            if (item.type.indexOf('image') !== -1) {
-                const file = item.getAsFile();
-                if (file) {
-                    const dt = new DataTransfer();
-                    dt.items.add(file);
-                    document.getElementById('imageInput').files = dt.files;
-                    // Skryjeme starý výsledek, pokud nějaký je
-                    resultDiv.classList.add('hidden');
-                    analysisPre.textContent = '';
-                }
-                break;
-            }
-        }
-    });
-ent.getElementById("analysisText");
+  <!-- Výsledek analýzy -->
+  <div id="result" class="hidden">
+    <pre id="analysisPre"></pre>
+  </div>
 
-        form.addEventListener("submit", async (e) => {
-            e.preventDefault();
-            const fileInput = document.getElementById("imageInput");
-            const file = fileInput.files[0];
-            if (!file) return;
+  <script>
+    const form = document.getElementById('uploadForm');
+    const imageInput = document.getElementById('imageInput');
+    const analysisPre = document.getElementById('analysisPre');
+    const resultDiv = document.getElementById('result');
+    const loader = document.getElementById('loader');
+    const submitBtn = form.querySelector('button[type="submit"]');
 
-            const formData = new FormData();
-            formData.append("image", file);
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!imageInput.files.length) return;
 
-            analysisPre.textContent = "Probíhá analýza…";
-            resultDiv.classList.remove("hidden");
+      loader.classList.remove('hidden');   // zobrazit spinner
+      resultDiv.classList.add('hidden');   // schovat starý výsledek
+      submitBtn.disabled = true;           // zneaktivnit tlačítko
 
-            try {
-                const response = await fetch("/analyze", {
-                    method: "POST",
-                    body: formData,
-                });
-             
+      try {
+        const formData = new FormData();
+        formData.append('image', imageInput.files[0]);
 
-                            if (!response.ok) {
-                throw new Error('Chyba serveru: ' + response.status);
-            
-                            }const data = await response.json();
-                if (data.analysis) {
-                    analysisPre.textContent = data.analysis;
-                } else {
-                    analysisPre.textContent = "Chyba: " + (data.error || "Neznámá chyba");
-                }
-            } catch (err) {
-                analysisPre.textContent = "Chyba požadavku: " + err;
-            }
+        const response = await fetch('/analyze', {
+          method: 'POST',
+          body: formData
         });
-    </script>
+
+        if (!response.ok) {
+          throw new Error('Chyba serveru: ' + response.status);
+        }
+
+        const data = await response.json();
+        analysisPre.textContent = data.analysis || ('Chyba: ' + (data.error || 'Neznámá chyba'));
+        resultDiv.classList.remove('hidden');
+      } catch (err) {
+        analysisPre.textContent = 'Chyba: ' + err.message;
+        resultDiv.classList.remove('hidden');
+      } finally {
+        loader.classList.add('hidden');    // skrýt spinner
+        submitBtn.disabled = false;        // znovu povolit tlačítko
+      }
+    });
+  </script>
 </body>
 </html>
