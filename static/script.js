@@ -10,7 +10,7 @@ const sourcesList = document.getElementById("sourcesList");
 const previewImg  = document.getElementById("preview");
 const dzOverlay   = document.querySelector(".dz-content");
 
-/* 1) PŘÍJEM SOUBORU --------------------------------------------------- */
+/* === 1) PŘÍJEM SOUBORU =============================================== */
 function handleFile(file){
   if(!file || !(file.type||"").startsWith("image/")) return;
   const dt = new DataTransfer(); dt.items.add(file); imageInput.files = dt.files;
@@ -32,107 +32,79 @@ dropZone.addEventListener("drop",e=>{e.preventDefault();dropZone.classList.remov
 dropZone.addEventListener("click",()=>imageInput.click());
 imageInput.addEventListener("change",()=>handleFile(imageInput.files[0]));
 
-/* 2) Ctrl + V ---------------------------------------------------------- */
+/* === 2) Ctrl + V ===================================================== */
 document.addEventListener("paste", e=>{
-  const items=e.clipboardData?.items||[];
-  for(const it of items){
-    if(it.kind==="file" && it.type.startsWith("image/")){
-      handleFile(it.getAsFile()); e.preventDefault(); return;
-    }
-  }
-  const files=e.clipboardData?.files||[];
-  if(files.length){ handleFile(files[0]); e.preventDefault(); }
+  const items=[...(e.clipboardData?.items||[])];
+  const fileItem=items.find(it=>it.kind==="file"&&it.type.startsWith("image/"));
+  if(fileItem){ handleFile(fileItem.getAsFile()); e.preventDefault(); return; }
+  const files=e.clipboardData?.files||[]; if(files.length){ handleFile(files[0]); e.preventDefault(); }
 });
 
-/* === 3) ANALÝZA ------------------------------------------------------ */
+/* === 3) ANALÝZA ====================================================== */
 submitBtn.addEventListener("click", analyse);
+async function analyse(){
+  if(!imageInput.files.length) return;
 
-async function analyse() {
-  // UI: zobraz spinner, schovej starý výsledek, zablokuj tlačítko
   loader.classList.remove("hidden");
   resultBox.classList.add("hidden");
   submitBtn.disabled = true;
 
-  try {
-    // připrav a odešli obrázek na /analyze
-    const fd = new FormData();
-    fd.append("image", imageInput.files[0]);
-
-    const res  = await fetch("/analyze", { method: "POST", body: fd });
+  try{
+    const fd=new FormData(); fd.append("image", imageInput.files[0]);
+    const res  = await fetch("/analyze",{method:"POST",body:fd});
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "Chyba serveru");
+    if(!res.ok) throw new Error(data.error||"Chyba serveru");
 
-    /* ------------------------------------------------------------
-       SERVER MŮŽE VRÁTIT DVA FORMÁTY:
-       1) { analysis: { claim, verdict, explanation, sources } }
-       2) prostý text (Markdown) – rozparsujeme parsePlain()
-    ------------------------------------------------------------ */
-    let payload = data.analysis ?? data;           // preferuj vnořený analysis
-    if (typeof payload === "string") {
-      payload = parsePlain(payload);               // převezmi do strukturovaného objektu
-    }
-
-    // vykresli výsledek do tabulky & zdrojů
+    let payload = data.analysis ?? data;
+    if(typeof payload === "string") payload = parsePlain(payload);
     renderResult(payload);
 
-  } catch (err) {
-    // fallback, když se něco pokazí
-    renderResult({
-      claim: "–",
-      verdict: "Error",
-      explanation: err.message,
-      sources: []
-    });
-  } finally {
+  }catch(err){
+    renderResult({claim:"–",verdict:"Error",explanation:err.message,sources:[]});
+  }finally{
     loader.classList.add("hidden");
-    resetDropzone();                               // připrav drop-zónu pro další obrázek
+    resetDropzone();
   }
 }
 
-
-/* 4) PARSE PLAIN-TEXT -------------------------------------------------- */
+/* === 4) PARSE PLAIN-TEXT (Markdown) ================================== */
 function parsePlain(txt){
-  const lines=txt.split(/\n+/).map(l=>l.trim()).filter(Boolean);
-  const ratingIdx=lines.findIndex(l=>/^Rating/i.test(l));
-  const srcIdx   =lines.findIndex(l=>/^Zdroje/i.test(l));
-
-  const explLines = lines.slice(0,ratingIdx>-1?ratingIdx:(srcIdx>-1?srcIdx:lines.length));
-  const explanation = explLines.join(" ");
+  const clean = txt.replace(/\r/g,"");              // sjednotí \n
+  const firstDot = clean.indexOf(".");
+  const claim = firstDot>0 ? clean.slice(0,firstDot+1).trim() : "—";
 
   let verdict="Unknown";
-  if(ratingIdx>-1){
-    const verdictMatch = lines[ratingIdx].match(/\*\*(.*?)\*\*/);
-    verdict = verdictMatch ? ({True:"True",False:"False"}[verdictMatch[1]]||"Partial") : "Partial";
-  }
+  if(/\bFalse\b/i.test(clean))          verdict="False";
+  else if(/\bTrue\b/i.test(clean) && !/\bFalse\b/i.test(clean)) verdict="True";
+  else if(/Partially\s+True/i.test(clean))          verdict="Partial";
 
-  const sources=[];
-  if(srcIdx>-1){
-    for(let i=srcIdx+1;i<lines.length;i++){
-      const linkMatch = lines[i].match(/\[(.*?)\]\((https?:\/\/[^\s)]+)\)/);
-      if(linkMatch) sources.push({title:linkMatch[1],url:linkMatch[2],relevance:3});
-    }
+  const linkRe=/\[(.*?)\]\((https?:\/\/[^\s)]+)\)/g;
+  const sources=[]; let m;
+  while((m=linkRe.exec(clean))!==null){
+    sources.push({title:m[1],url:m[2],relevance:3});
   }
-  return {claim:"—",verdict,explanation,sources};
+  return {claim,verdict,explanation:clean,sources};
 }
 
-/* 5) VÝSLEDEK + POMOCNÉ ----------------------------------------------- */
+/* === 5) VÝSLEDEK + POMOCNÉ ========================================== */
 function renderResult(data){
   analysisTbl.innerHTML=""; sourcesList.innerHTML="";
-  const rows=[
-    ["Tvrzení"   , data.claim||"–"],
-    ["Verdikt"   , badge(data.verdict)],
-    ["Vysvětlení", data.explanation||"–"]
-  ];
-  rows.forEach(([k,v])=>{
+
+  [["Tvrzení",data.claim||"–"],
+   ["Verdikt",badge(data.verdict)],
+   ["Vysvětlení",data.explanation||"–"]
+  ].forEach(([k,v])=>{
     const tr=analysisTbl.insertRow();
     tr.insertCell().textContent=k;
-    if(typeof v==="string") tr.insertCell().textContent=v;
-    else tr.insertCell().appendChild(v);
+    typeof v==="string" ? tr.insertCell().textContent=v
+                        : tr.insertCell().appendChild(v);
   });
+
   if(data.sources?.length){
     data.sources.forEach(s=>sourcesList.appendChild(sourceLi(s)));
     sourcesBox.classList.remove("hidden");
   }else sourcesBox.classList.add("hidden");
+
   resultBox.classList.remove("hidden");
 }
 function badge(v){
