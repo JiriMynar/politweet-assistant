@@ -5,11 +5,14 @@ import openai
 from PIL import Image
 import base64
 import io
+import hashlibio
 
 # Načti klíč z proměnné prostředí
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
 app = Flask(__name__)
+cache = {}
+
 
 def image_to_base64(image_file):
     """Převede obrázek na base64 řetězec (PNG)."""
@@ -27,17 +30,27 @@ def analyze():
     if "image" not in request.files:
         return jsonify({"error": "Žádný soubor nebyl odeslán"}), 400
 
-    image_file = request.files["image"]
+    image_file = request.fil
+        img_bytes = image_file.read()
+    # Limit velikosti 5 MB
+    if len(img_bytes) > 5 * 1024 * 1024:
+        return jsonify({"error": "Soubor je příliš velký (max 5 MB)."}), 400
 
-    # Převod na base64
-    b64_image = image_to_base64(image_file)
+    img_hash = hashlib.sha256(img_bytes).hexdigest()
+    if img_hash in cache:
+        return jsonify({"analysis": cache[img_hash]})
+
+    b64_image = base64.b64encode(img_bytes).decode()
+es["image"]
+
 
     # Vytvoření promptu
     user_prompt = (
         "Na vloženém obrázku je politik a jeho tweet. "
-        "Vysvětli tweet (max 3 věty) a stručně popiš, proč je důležitý pro běžného občana. "
-        "Piš česky a srozumitelně."
-    )
+        "Vytěž z něj hlavní tvrzení, ověř jeho pravdivost a uveď rating (True/Partially True/False). "
+        "Uveď také 1–2 stručné zdroje (např. odkaz na článek nebo oficiální statistiku). "
+        "Shrň výsledek maximálně ve 3 větách, piš česky a srozumitelně."
+    )    )
 
     try:
         response = openai.chat.completions.create(
@@ -58,6 +71,8 @@ def analyze():
                 }
             ]
         )
+      [img_hash] = answer
+
         answer = response.choices[0].message.content
         return jsonify({"analysis": answer})
 
