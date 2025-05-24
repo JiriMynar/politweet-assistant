@@ -17,10 +17,8 @@
 
     <!-- DROP / PASTE ZÓNA -->
     <div id="dropZone" tabindex="0">
-      <!-- náhled -->
       <img id="preview" class="preview hidden" alt="Náhled obrázku" />
 
-      <!-- překryv s ikonou a textem -->
       <div class="dz-content">
         <span class="dz-icon">📋</span>
         <span id="dzText">Sem přetáhni obrázek nebo stiskni Ctrl + V</span>
@@ -32,23 +30,17 @@
 
     <button id="submitBtn" disabled>Analyzovat</button>
 
-    <!-- LOADER -->
     <div id="loader" class="hidden loader">
       <div class="spinner"></div>
       <span>Probíhá analýza…</span>
     </div>
 
-    <!-- VÝSLEDEK -->
     <section id="result" class="hidden result">
       <h2>Výsledek</h2>
 
-      <!-- tabulka -->
       <table id="analysisTable" class="hidden"></table>
-
-      <!-- fallback plain-text -->
       <pre id="plainText" class="hidden"></pre>
 
-      <!-- zdroje -->
       <div id="sourcesBox" class="hidden">
         <h3>Zdroje</h3>
         <ul id="sourcesList"></ul>
@@ -60,4 +52,6 @@
     <p>© 2025 Politweet Assistant</p>
   </footer>
 
-  <script src="{{ url_for('static', filename='script.js') }}"_
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
