@@ -44,20 +44,51 @@ document.addEventListener("paste", e=>{
   if(files.length){ handleFile(files[0]); e.preventDefault(); }
 });
 
-/* 3) ANALÝZA ----------------------------------------------------------- */
-submitBtn.addEventListener("click",analyse);
-async function analyse(){
-  loader.classList.remove("hidden"); resultBox.classList.add("hidden"); submitBtn.disabled=true;
-  try{
-    const fd=new FormData(); fd.append("image",imageInput.files[0]);
-    const res = await fetch("/analyze",{method:"POST",body:fd});
+/* === 3) ANALÝZA ------------------------------------------------------ */
+submitBtn.addEventListener("click", analyse);
+
+async function analyse() {
+  // UI: zobraz spinner, schovej starý výsledek, zablokuj tlačítko
+  loader.classList.remove("hidden");
+  resultBox.classList.add("hidden");
+  submitBtn.disabled = true;
+
+  try {
+    // připrav a odešli obrázek na /analyze
+    const fd = new FormData();
+    fd.append("image", imageInput.files[0]);
+
+    const res  = await fetch("/analyze", { method: "POST", body: fd });
     const data = await res.json();
-    if(!res.ok) throw new Error(data.error||"Chyba serveru");
-    renderResult(typeof data==="string"?parsePlain(data):(data.analysis||data));
-  }catch(err){
-    renderResult({claim:"–",verdict:"Error",explanation:err.message,sources:[]});
-  }finally{ loader.classList.add("hidden"); resetDropzone(); }
+    if (!res.ok) throw new Error(data.error || "Chyba serveru");
+
+    /* ------------------------------------------------------------
+       SERVER MŮŽE VRÁTIT DVA FORMÁTY:
+       1) { analysis: { claim, verdict, explanation, sources } }
+       2) prostý text (Markdown) – rozparsujeme parsePlain()
+    ------------------------------------------------------------ */
+    let payload = data.analysis ?? data;           // preferuj vnořený analysis
+    if (typeof payload === "string") {
+      payload = parsePlain(payload);               // převezmi do strukturovaného objektu
+    }
+
+    // vykresli výsledek do tabulky & zdrojů
+    renderResult(payload);
+
+  } catch (err) {
+    // fallback, když se něco pokazí
+    renderResult({
+      claim: "–",
+      verdict: "Error",
+      explanation: err.message,
+      sources: []
+    });
+  } finally {
+    loader.classList.add("hidden");
+    resetDropzone();                               // připrav drop-zónu pro další obrázek
+  }
 }
+
 
 /* 4) PARSE PLAIN-TEXT -------------------------------------------------- */
 function parsePlain(txt){
