@@ -17,31 +17,43 @@
 
     <!-- DROP / PASTE ZÓNA -->
     <div id="dropZone" tabindex="0">
-      <!-- náhled obrázku -->
+      <!-- náhled -->
       <img id="preview" class="preview hidden" alt="Náhled obrázku" />
 
-      <!-- překryv s ikonou a textem -->
+      <!-- překryv -->
       <div class="dz-content">
         <span class="dz-icon">📋</span>
         <span id="dzText">Sem přetáhni obrázek nebo stiskni Ctrl + V</span>
         <span class="dz-pick">Vybrat soubor…</span>
       </div>
 
-      <!-- skutečný input -->
       <input type="file" id="imageInput" name="image" accept="image/*" hidden />
     </div>
 
     <button id="submitBtn" disabled>Analyzovat</button>
 
+    <!-- LOADER -->
     <div id="loader" class="hidden loader">
       <div class="spinner"></div>
       <span>Probíhá analýza…</span>
     </div>
 
-    <div id="result" class="hidden result">
+    <!-- VÝSLEDEK -->
+    <section id="result" class="hidden result">
       <h2>Výsledek</h2>
-      <table id="analysisTable"></table>
-    </div>
+
+      <!-- tabulka verdiktu -->
+      <table id="analysisTable" class="hidden"></table>
+
+      <!-- fallback prostý text -->
+      <pre id="plainText" class="hidden"></pre>
+
+      <!-- zdroje -->
+      <div id="sourcesBox" class="hidden">
+        <h3>Zdroje</h3>
+        <ul id="sourcesList"></ul>
+      </div>
+    </section>
   </main>
 
   <footer>
