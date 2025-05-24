@@ -10,9 +10,9 @@ const sourcesList = document.getElementById("sourcesList");
 const previewImg  = document.getElementById("preview");
 const dzOverlay   = document.querySelector(".dz-content");
 
-/* === 1) PŘÍJEM SOUBORU =============================================== */
+/* 1) PŘÍJEM SOUBORU --------------------------------------------------- */
 function handleFile(file){
-  if(!file || !file.type.startsWith("image/")) return;
+  if(!file || !(file.type||"").startsWith("image/")) return;
   const dt = new DataTransfer(); dt.items.add(file); imageInput.files = dt.files;
 
   previewImg.src = URL.createObjectURL(file);
@@ -32,30 +32,19 @@ dropZone.addEventListener("drop",e=>{e.preventDefault();dropZone.classList.remov
 dropZone.addEventListener("click",()=>imageInput.click());
 imageInput.addEventListener("change",()=>handleFile(imageInput.files[0]));
 
-/* === Ctrl + V — univerzální listener ================================ */
-/* – naslouchá přímo na document.body
-   – funguje, ať je fokus kdekoliv (Chrome, Edge, Firefox, Safari)     */
-document.body.addEventListener("paste", e => {
-  console.log("paste event", e);              // ↖︎ rychlá kontrola v konzoli
-
-  const items = e.clipboardData?.items;
-  if (items?.length) {
-    for (const it of items) {
-      if (it.kind === "file" && it.type.startsWith("image/")) {
-        handleFile(it.getAsFile());
-        e.preventDefault();
-        return;
-      }
+/* 2) Ctrl + V ---------------------------------------------------------- */
+document.addEventListener("paste", e=>{
+  const items=e.clipboardData?.items||[];
+  for(const it of items){
+    if(it.kind==="file" && it.type.startsWith("image/")){
+      handleFile(it.getAsFile()); e.preventDefault(); return;
     }
   }
-  const files = e.clipboardData?.files;
-  if (files?.length) {
-    handleFile(files[0]);
-    e.preventDefault();
-  }
+  const files=e.clipboardData?.files||[];
+  if(files.length){ handleFile(files[0]); e.preventDefault(); }
 });
 
-/* === 2) ANALÝZA ====================================================== */
+/* 3) ANALÝZA ----------------------------------------------------------- */
 submitBtn.addEventListener("click",analyse);
 async function analyse(){
   loader.classList.remove("hidden"); resultBox.classList.add("hidden"); submitBtn.disabled=true;
@@ -70,7 +59,7 @@ async function analyse(){
   }finally{ loader.classList.add("hidden"); resetDropzone(); }
 }
 
-/* === 3) PARSE PLAIN-TEXT ============================================ */
+/* 4) PARSE PLAIN-TEXT -------------------------------------------------- */
 function parsePlain(txt){
   const lines=txt.split(/\n+/).map(l=>l.trim()).filter(Boolean);
   const ratingIdx=lines.findIndex(l=>/^Rating/i.test(l));
@@ -81,21 +70,21 @@ function parsePlain(txt){
 
   let verdict="Unknown";
   if(ratingIdx>-1){
-    const m=lines[ratingIdx].match(/\\*\\*(.*?)\\*\\*/);
-    verdict = m?({True:"True",False:"False"}[m[1]]||"Partial"):"Partial";
+    const verdictMatch = lines[ratingIdx].match(/\*\*(.*?)\*\*/);
+    verdict = verdictMatch ? ({True:"True",False:"False"}[verdictMatch[1]]||"Partial") : "Partial";
   }
 
   const sources=[];
   if(srcIdx>-1){
     for(let i=srcIdx+1;i<lines.length;i++){
-      const m=lines[i].match(/\\[(.*?)\\]\\((https?:\\/\\/[^\\s)]+)\\)/);
-      if(m) sources.push({title:m[1],url:m[2],relevance:3});
+      const linkMatch = lines[i].match(/\[(.*?)\]\((https?:\/\/[^\s)]+)\)/);
+      if(linkMatch) sources.push({title:linkMatch[1],url:linkMatch[2],relevance:3});
     }
   }
   return {claim:"—",verdict,explanation,sources};
 }
 
-/* === 4) VÝSLEDEK ===================================================== */
+/* 5) VÝSLEDEK + POMOCNÉ ----------------------------------------------- */
 function renderResult(data){
   analysisTbl.innerHTML=""; sourcesList.innerHTML="";
   const rows=[
@@ -109,16 +98,12 @@ function renderResult(data){
     if(typeof v==="string") tr.insertCell().textContent=v;
     else tr.insertCell().appendChild(v);
   });
-
   if(data.sources?.length){
     data.sources.forEach(s=>sourcesList.appendChild(sourceLi(s)));
     sourcesBox.classList.remove("hidden");
   }else sourcesBox.classList.add("hidden");
-
   resultBox.classList.remove("hidden");
 }
-
-/* === Pomocné ========================================================= */
 function badge(v){
   const span=document.createElement("span");
   span.className=`badge ${v}`; span.textContent=
@@ -132,8 +117,7 @@ function sourceLi({title,url,relevance=3}){
   li.appendChild(a);
   for(let i=1;i<=5;i++){
     const star=document.createElement("span");
-    star.className=`star ${i<=relevance?'fill':'empty'}`;
-    star.textContent=i<=relevance?"★":"☆";
+    star.className=`star ${i<=relevance?'fill':'empty'}`; star.textContent=i<=relevance?"★":"☆";
     li.appendChild(star);
   }
   return li;
