@@ -32,20 +32,27 @@ dropZone.addEventListener("drop",e=>{e.preventDefault();dropZone.classList.remov
 dropZone.addEventListener("click",()=>imageInput.click());
 imageInput.addEventListener("change",()=>handleFile(imageInput.files[0]));
 
-/* === Ctrl + V ======================================================== */
-["window","document",dropZone].forEach(t=>{
-  (t==="window"?window:t==="document"?document:t).addEventListener("paste",e=>{
-    if(e.clipboardData?.items){
-      for(const it of e.clipboardData.items){
-        if(it.kind==="file"&&it.type.startsWith("image/")){
-          handleFile(it.getAsFile()); e.preventDefault(); return;
-        }
+/* === Ctrl + V — univerzální listener ================================ */
+/* – naslouchá přímo na document.body
+   – funguje, ať je fokus kdekoliv (Chrome, Edge, Firefox, Safari)     */
+document.body.addEventListener("paste", e => {
+  console.log("paste event", e);              // ↖︎ rychlá kontrola v konzoli
+
+  const items = e.clipboardData?.items;
+  if (items?.length) {
+    for (const it of items) {
+      if (it.kind === "file" && it.type.startsWith("image/")) {
+        handleFile(it.getAsFile());
+        e.preventDefault();
+        return;
       }
     }
-    if(e.clipboardData?.files?.length){
-      handleFile(e.clipboardData.files[0]); e.preventDefault();
-    }
-  });
+  }
+  const files = e.clipboardData?.files;
+  if (files?.length) {
+    handleFile(files[0]);
+    e.preventDefault();
+  }
 });
 
 /* === 2) ANALÝZA ====================================================== */
