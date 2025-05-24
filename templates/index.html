@@ -60,7 +60,12 @@ ent.getElementById("analysisText");
                     method: "POST",
                     body: formData,
                 });
-                const data = await response.json();
+             
+
+                            if (!response.ok) {
+                throw new Error('Chyba serveru: ' + response.status);
+            
+                            }const data = await response.json();
                 if (data.analysis) {
                     analysisPre.textContent = data.analysis;
                 } else {
