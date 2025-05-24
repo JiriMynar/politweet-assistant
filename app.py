@@ -45,14 +45,13 @@ b64_image = base64.b64encode(img_bytes).decode()
 
 
 # Vytvoření promptu
-user_prompt = (
-"Na vloženém obrázku je politik a jeho tweet. "
-"Vytěž z něj hlavní tvrzení, ověř jeho pravdivost a uveď rating (True/Partially True/False). "
-"Uveď také 1–2 stručné zdroje (např. odkaz na článek nebo oficiální statistiku). "
-"Shrň výsledek maximálně ve 3 větách, piš česky a srozumitelně."
-)    )
 
-try:
+user_prompt = """
+Na vloženém obrázku je politik a jeho tweet. 
+Vytěž z něj hlavní tvrzení, ověř jeho pravdivost a uveď rating (True/Partially True/False). 
+Uveď také 1–2 stručné zdroje (např. odkaz na článek nebo oficiální statistiku). 
+Shrň výsledek maximálně ve 3 větách, piš česky a srozumitelně.
+""""""y:
 response = openai.chat.completions.create(
 model="gpt-4o-mini",
 messages=[
