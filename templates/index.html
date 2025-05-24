@@ -1,31 +1,41 @@
 <!DOCTYPE html>
 <html lang="cs">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Politweet Assistant</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-  <link rel="preconnect" href="https://fonts.gstatic.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Google Fonts + hlavní stylesheet -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 </head>
+
 <body>
   <main class="card">
     <h1>Politweet Assistant</h1>
-    <p>Nahraj obrázek tweetu politika a získej rychlé ověření faktů.</p>
+    <p>Nahraj nebo vlož (Ctrl + V) obrázek tweetu politika a získej rychlé ověření faktů.</p>
 
-    <form id="uploadForm">
-      <input type="file" id="imageInput" name="image" accept="image/*" required>
-      <button type="submit" id="submitBtn">Analyzovat</button>
-    </form>
+    <!-- Drop/paste zóna – click otevře nativní file-picker -->
+    <div id="dropZone" tabindex="0">
+      <span class="dz-icon">📋</span>
+      <span id="dzText">Sem přetáhni obrázek nebo stiskni Ctrl + V</span>
+      <input type="file" id="imageInput" name="image" accept="image/*" hidden />
+    </div>
 
+    <button id="submitBtn" disabled>Analyzovat</button>
+
+    <!-- loader -->
     <div id="loader" class="hidden loader">
       <div class="spinner"></div>
       <span>Probíhá analýza…</span>
     </div>
 
+    <!-- výsledek -->
     <div id="result" class="hidden result">
       <h2>Výsledek</h2>
-      <pre id="analysisPre"></pre>
+      <table id="analysisTable"></table>
     </div>
   </main>
 
@@ -33,47 +43,6 @@
     <p>© 2025 Politweet Assistant</p>
   </footer>
 
-  <script>
-    const form       = document.getElementById('uploadForm');
-    const imageInput = document.getElementById('imageInput');
-    const analysisPre = document.getElementById('analysisPre');
-    const resultDiv  = document.getElementById('result');
-    const loader     = document.getElementById('loader');
-    const submitBtn  = document.getElementById('submitBtn');
-
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      if (!imageInput.files.length) return;
-
-      loader.classList.remove('hidden');
-      resultDiv.classList.add('hidden');
-      submitBtn.disabled = true;
-
-      try {
-        const formData = new FormData();
-        formData.append('image', imageInput.files[0]);
-
-        const response = await fetch('/analyze', {
-          method: 'POST',
-          body: formData
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.error || 'Chyba serveru');
-        }
-
-        analysisPre.textContent = data.analysis;
-        resultDiv.classList.remove('hidden');
-      } catch (err) {
-        analysisPre.textContent = 'Chyba: ' + err.message;
-        resultDiv.classList.remove('hidden');
-      } finally {
-        loader.classList.add('hidden');
-        submitBtn.disabled = false;
-      }
-    });
-  </script>
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>
