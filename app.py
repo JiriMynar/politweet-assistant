@@ -35,14 +35,14 @@ def analyze():
     if "image" not in request.files:
         return jsonify({"error": "Žádný soubor nebyl odeslán"}), 400
 
-    image_file = request.fil
-        img_bytes = image_file.read()
-    # Limit velikosti 5 MB
-    if len(img_bytes) > 5 * 1024 * 1024:
-        return jsonify({"error": "Soubor je příliš velký (max 5 MB)."}), 400
+image_file = request.files['image']
+    img_bytes = image_file.read()
+# Limit velikosti 5 MB
+if len(img_bytes) > 5 * 1024 * 1024:
+    return jsonify({"error": "Soubor je příliš velký (max 5 MB)."}), 400
 
-    b64_image = base64.b64encode(img_bytes).decode()
-es["image"]
+b64_image = base64.b64encode(img_bytes).decode()
+
 
 
     # Vytvoření promptu
