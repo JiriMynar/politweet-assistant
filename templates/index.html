@@ -20,7 +20,7 @@
       <!-- náhled -->
       <img id="preview" class="preview hidden" alt="Náhled obrázku" />
 
-      <!-- překryv -->
+      <!-- překryv s ikonou a textem -->
       <div class="dz-content">
         <span class="dz-icon">📋</span>
         <span id="dzText">Sem přetáhni obrázek nebo stiskni Ctrl + V</span>
@@ -42,10 +42,10 @@
     <section id="result" class="hidden result">
       <h2>Výsledek</h2>
 
-      <!-- tabulka verdiktu -->
+      <!-- tabulka -->
       <table id="analysisTable" class="hidden"></table>
 
-      <!-- fallback prostý text -->
+      <!-- fallback plain-text -->
       <pre id="plainText" class="hidden"></pre>
 
       <!-- zdroje -->
@@ -60,6 +60,4 @@
     <p>© 2025 Politweet Assistant</p>
   </footer>
 
-  <script src="{{ url_for('static', filename='script.js') }}"></script>
-</body>
-</html>
+  <script src="{{ url_for('static', filename='script.js') }}"_
