@@ -25,11 +25,8 @@ p{margin:0 0 1.5rem}
   position:absolute;inset:0;width:100%;height:100%;
   object-fit:contain;border-radius:inherit;opacity:.35;
 }
-.dz-content{
-  position:relative;z-index:2;display:flex;flex-direction:column;
-  gap:.75rem;align-items:center
-}
-.dz-content.hidden{display:none}          /* <— nově */
+.dz-content{position:relative;z-index:2;display:flex;flex-direction:column;gap:.75rem;align-items:center}
+.dz-content.hidden{display:none}
 .dz-icon{font-size:2.5rem}
 .dz-pick{font-size:.95rem;color:#4f46e5;text-decoration:underline;cursor:pointer}
 
@@ -52,10 +49,7 @@ button:disabled{opacity:.6;cursor:not-allowed}
 @keyframes spin{to{transform:rotate(360deg)}}
 
 /* ===== VÝSLEDEK ======================================================= */
-.result{
-  margin-top:1.5rem;background:#f9fafb;border:1px solid #e5e7eb;
-  border-radius:10px;padding:1rem;
-}
+.result{margin-top:1.5rem;background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:1rem}
 #analysisTable{
   width:100%;border-collapse:collapse;table-layout:fixed;margin-top:.5rem
 }
@@ -63,13 +57,8 @@ button:disabled{opacity:.6;cursor:not-allowed}
   border:1px solid #e5e7eb;padding:.65rem;white-space:pre-wrap;word-break:break-word
 }
 #analysisTable th{background:#f3f4f6;font-weight:600;text-align:left}
-.badge{
-  display:inline-block;padding:.15rem .5rem;border-radius:6px;
-  font-size:.875rem;font-weight:600;color:#fff
-}
-.badge.True{background:#16a34a}
-.badge.False{background:#dc2626}
-.badge.Partial{background:#f59e0b}
+.badge{display:inline-block;padding:.15rem .5rem;border-radius:6px;font-size:.875rem;font-weight:600;color:#fff}
+.badge.True{background:#16a34a}.badge.False{background:#dc2626}.badge.Partial{background:#f59e0b}
 .stars{color:#facc15;font-size:1rem;margin-left:.3rem}
 
 /* ===== FOOTER & RESPONSIVITA ========================================= */
