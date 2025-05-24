@@ -22,24 +22,47 @@ function handleFile(file){
 
   previewImg.src = URL.createObjectURL(file);
   previewImg.classList.remove("hidden");
-  dzOverlay.classList.add("hidden");        // skryj ikonu + text
+  dzOverlay.classList.add("hidden");
 
   dzText.textContent = "Obrázek připraven ✔︎";
   submitBtn.disabled = false;
+}
+function resetDropzone(){
+  imageInput.value = "";
+  previewImg.classList.add("hidden");
+  dzOverlay.classList.remove("hidden");
+  dzText.textContent = "Sem přetáhni obrázek nebo stiskni Ctrl + V";
+  submitBtn.disabled = true;
 }
 dropZone.addEventListener("dragover",e=>{e.preventDefault();dropZone.classList.add("dragover")});
 dropZone.addEventListener("dragleave",()=>dropZone.classList.remove("dragover"));
 dropZone.addEventListener("drop",e=>{e.preventDefault();dropZone.classList.remove("dragover");handleFile(e.dataTransfer.files[0])});
 dropZone.addEventListener("click",()=>imageInput.click());
 imageInput.addEventListener("change",()=>handleFile(imageInput.files[0]));
-window.addEventListener("paste",e=>{
-  if(e.clipboardData?.items){
-    for(const it of e.clipboardData.items){
-      if(it.kind==="file" && it.type.startsWith("image/")){handleFile(it.getAsFile());return;}
+
+/* === Ctrl + V – robustní ============================================ */
+function registerPasteListener(target){
+  target.addEventListener("paste", e=>{
+    // items (PrintScreen, snímek schránky)
+    if(e.clipboardData?.items?.length){
+      for(const it of e.clipboardData.items){
+        if(it.kind==="file" && it.type.startsWith("image/")){
+          handleFile(it.getAsFile());
+          e.preventDefault();
+          return;
+        }
+      }
     }
-  }
-  if(e.clipboardData?.files.length) handleFile(e.clipboardData.files[0]);
-});
+    // files (Ctrl+C obrázek z Průzkumníka)
+    if(e.clipboardData?.files?.length){
+      handleFile(e.clipboardData.files[0]);
+      e.preventDefault();
+    }
+  });
+}
+registerPasteListener(window);
+registerPasteListener(document);
+registerPasteListener(dropZone);
 
 /* === 2) ANALÝZA ====================================================== */
 submitBtn.addEventListener("click", analyze);
@@ -56,14 +79,13 @@ async function analyze(){
     const json = await res.json();
     if(!res.ok) throw new Error(json.error || "Chyba serveru");
 
-    renderResult(json.analysis || json);    // podporuje i plain text
+    renderResult(json.analysis || json);
   }catch(err){ renderPlain("Chyba: "+err.message); }
   finally{ loader.classList.add("hidden"); }
 }
 
 /* === 3) VÝSLEDEK ===================================================== */
 function renderResult(data){
-  // pokud backend ještě neposílá JSON
   if(typeof data === "string"){ renderPlain(data); return; }
 
   analysisTbl.innerHTML = "";
@@ -71,7 +93,7 @@ function renderResult(data){
 
   const rows = [
     ["Tvrzení"   , data.claim || "–"],
-    ["Verdikt"   , createVerdictBadge(data.verdict)],
+    ["Verdikt"   , verdictBadge(data.verdict)],
     ["Vysvětlení", data.explanation || "–"]
   ];
   rows.forEach(([k,v])=>{
@@ -82,49 +104,48 @@ function renderResult(data){
   });
   analysisTbl.classList.remove("hidden");
 
-  if(Array.isArray(data.sources) && data.sources.length){
+  if(Array.isArray(data.sources)&&data.sources.length){
     data.sources.forEach(src=>sourcesList.appendChild(sourceLi(src)));
     sourcesBox.classList.remove("hidden");
   }else sourcesBox.classList.add("hidden");
 
   plainTextEl.classList.add("hidden");
   resultBox.classList.remove("hidden");
+  resetDropzone();                       // připrav další Ctrl+V
 }
-
 function renderPlain(text){
   analysisTbl.classList.add("hidden");
   sourcesList.innerHTML = "";
 
-  // markdown odkazy → klikací + ★★★
-  const linkRe = /\[(.*?)\]\((https?:\/\/[^\s)]+)\)/g;
-  const matches = [...text.matchAll(linkRe)];
+  const mdRe = /\[(.*?)\]\((https?:\/\/[^\s)]+)\)/g;
+  const matches = [...text.matchAll(mdRe)];
   if(matches.length){
     matches.forEach(m=>sourcesList.appendChild(sourceLi({title:m[1],url:m[2],relevance:3})));
     sourcesBox.classList.remove("hidden");
   }else sourcesBox.classList.add("hidden");
 
-  plainTextEl.textContent = text.replace(linkRe, '$1 ($2)');
+  plainTextEl.textContent = text.replace(mdRe,'$1 ($2)');
   plainTextEl.classList.remove("hidden");
   resultBox.classList.remove("hidden");
+  resetDropzone();
 }
 
-/* === Pomocné ============================================================== */
-function createVerdictBadge(v){
+/* === Pomocné ========================================================= */
+function verdictBadge(v){
   if(!v) return document.createTextNode("–");
-  const span = document.createElement("span");
-  span.className = `badge ${v}`;
-  span.textContent =
+  const span=document.createElement("span");
+  span.className=`badge ${v}`;
+  span.textContent=
     v==="True"    ? "Pravda" :
     v==="False"   ? "Nepravda" :
     v==="Partial" ? "Částečně pravda" : v;
   return span;
 }
 function sourceLi(src){
-  const li = document.createElement("li");
-  const a  = document.createElement("a");
-  a.href = src.url; a.target="_blank"; a.rel="noopener";
-  a.textContent = src.title || src.url;
+  const li=document.createElement("li");
+  const a=document.createElement("a");
+  a.href=src.url; a.target="_blank"; a.rel="noopener"; a.textContent=src.title||src.url;
   li.appendChild(a);
-  li.insertAdjacentHTML("beforeend", ` <span class="stars">${'★'.repeat(src.relevance||3)}</span>`);
+  li.insertAdjacentHTML("beforeend",` <span class="stars">${'★'.repeat(src.relevance||3)}</span>`);
   return li;
 }
