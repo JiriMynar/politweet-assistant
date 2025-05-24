@@ -5,13 +5,20 @@ import openai
 from PIL import Image
 import base64
 import io
+
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from cachetools import TTLCache
+import imghdr
 import hashlibio
 
 # Načti klíč z proměnné prostředí
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
-app = Flask(__name__)
-cache = {}
+app = Flask
+(__name__)
+cache =
+{}
 
 
 def image_to_base64(image_file):
