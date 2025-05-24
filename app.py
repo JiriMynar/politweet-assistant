@@ -32,53 +32,53 @@ def index():
 
 @app.route("/analyze", methods=["POST"])
 def analyze():
-    if "image" not in request.files:
-        return jsonify({"error": "Žádný soubor nebyl odeslán"}), 400
+if "image" not in request.files:
+    return jsonify({"error": "Žádný soubor nebyl odeslán"}), 400
 
 image_file = request.files['image']
-    img_bytes = image_file.read()
+img_bytes = image_file.read()
 # Limit velikosti 5 MB
 if len(img_bytes) > 5 * 1024 * 1024:
-    return jsonify({"error": "Soubor je příliš velký (max 5 MB)."}), 400
+return jsonify({"error": "Soubor je příliš velký (max 5 MB)."}), 400
 
 b64_image = base64.b64encode(img_bytes).decode()
 
 
 
-    # Vytvoření promptu
-    user_prompt = (
-        "Na vloženém obrázku je politik a jeho tweet. "
-        "Vytěž z něj hlavní tvrzení, ověř jeho pravdivost a uveď rating (True/Partially True/False). "
-        "Uveď také 1–2 stručné zdroje (např. odkaz na článek nebo oficiální statistiku). "
-        "Shrň výsledek maximálně ve 3 větách, piš česky a srozumitelně."
-    )    )
+# Vytvoření promptu
+user_prompt = (
+    "Na vloženém obrázku je politik a jeho tweet. "
+    "Vytěž z něj hlavní tvrzení, ověř jeho pravdivost a uveď rating (True/Partially True/False). "
+    "Uveď také 1–2 stručné zdroje (např. odkaz na článek nebo oficiální statistiku). "
+    "Shrň výsledek maximálně ve 3 větách, piš česky a srozumitelně."
+)    )
 
-    try:
-        response = openai.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "image_url",
-                            "image_url": f"data:image/png;base64,{b64_image}"
-                        },
-                        {
-                            "type": "text",
-                            "text": user_prompt
-                        }
-                    ],
-                }
-            ]
-        )
+try:
+    response = openai.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "image_url",
+                        "image_url": f"data:image/png;base64,{b64_image}"
+                    },
+                    {
+                        "type": "text",
+                        "text": user_prompt
+                    }
+                ],
+            }
+        ]
+    )
 
 
-        answer = response.choices[0].message.content
-        return jsonify({"analysis": answer})
+    answer = response.choices[0].message.content
+    return jsonify({"analysis": answer})
 
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+except Exception as e:
+    return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
     # Pro lokální vývoj; v produkci použijte WSGI server (gunicorn/uvicorn)
