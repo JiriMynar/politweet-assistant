@@ -15,12 +15,16 @@
 <body>
   <main class="card">
     <h1>Politweet Assistant</h1>
-    <p>Nahraj nebo vlož (Ctrl + V) obrázek tweetu politika a získej rychlé ověření faktů.</p>
+    <p>Nahraj (Ctrl + V, přetáhni nebo vyber) obrázek tweetu politika a získej rychlé ověření faktů.</p>
 
-    <!-- Drop/paste zóna – click otevře nativní file-picker -->
+    <!-- DROP / PASTE ZÓNA -->
     <div id="dropZone" tabindex="0">
       <span class="dz-icon">📋</span>
       <span id="dzText">Sem přetáhni obrázek nebo stiskni Ctrl + V</span>
+
+      <!-- viditelný pseudo-button pro ruční výběr -->
+      <span class="dz-pick">Vybrat soubor…</span>
+
       <input type="file" id="imageInput" name="image" accept="image/*" hidden />
     </div>
 
