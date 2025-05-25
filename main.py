@@ -10,7 +10,8 @@ from PIL import Image
 import time
 import json
 from flask_limiter import Limiter
-from flask_limiter.
+
+from flask_limiter.util import ge
 import openai
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
@@ -24,7 +25,7 @@ limiter = Limiter(
     storage_uri="memory://",
 )
 
-# Simulace analýzy - v produkci by zde bylo volání OpenAI API
+# Volání OpenAI API
 def analyze_content(text=None, image=None, generate_social=False):
      # Volání OpenAI API
     messages = []
