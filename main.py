@@ -10,7 +10,9 @@ from PIL import Image
 import time
 import json
 from flask_limiter import Limiter
-from flask_limiter.util import get_remote_address
+from flask_limiter.
+import openai
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
 app = Flask(__name__)
 
@@ -24,18 +26,34 @@ limiter = Limiter(
 
 # Simulace analýzy - v produkci by zde bylo volání OpenAI API
 def analyze_content(text=None, image=None, generate_social=False):
-    # Simulace zpoždění API
-    time.sleep(1.5)
-    
-    # Ukázkový výsledek analýzy
+     # Volání OpenAI API
+    messages = []
+    if text:
+        messages.append({"role": "user", "content": text})
+    elif image:
+        # Pokud byste chtěli analyzovat obrázek, museli byste použít Vision endpoint nebo OCR
+        messages.append({"role": "user", "content": "Analyze the content of the provided image."})
+
+    response = openai.ChatCompletion.create(
+        model="gpt-4o-mini",
+        messages=messages
+    )
+
     result = {
-        "analysis": "Status: 3. Zavádějící\n\nVysvětlení:\nTvrzení obsahuje některé pravdivé informace, ale je prezentováno zavádějícím způsobem, který může vést k nesprávným závěrům. Zatímco uvedená statistika o 15% nárůstu je technicky správná, ignoruje důležitý kontext a dlouhodobé trendy.\n\nPodrobnější analýza ukazuje, že krátkodobý nárůst je součástí běžné sezónní fluktuace a při pohledu na pětileté období je celkový trend ve skutečnosti klesající o 8% ročně. Navíc, tvrzení nesprávně přisuzuje změnu konkrétní politice, ačkoliv odborné studie identifikovaly několik různých faktorů, které k této situaci přispívají.\n\nZdroje:\nhttps://www.statistickyurad.cz/analyzy/ekonomicke-trendy-2025\nhttps://www.ekonomicky-institut.cz/studie/faktory-rustu-2025\nhttps://www.univerzita.cz/vyzkum/analyza-dopadu-politik",
+        "analysis": response.choices[0].message.content
     }
-    
-    # Přidání odpovědi pro sociální sítě, pokud je požadována
+
     if generate_social:
-        result["social"] = "OVĚŘENO ❓ Tvrzení o 15% nárůstu je ZAVÁDĚJÍCÍ. Ignoruje sezónní fluktuace a dlouhodobý klesající trend (-8% ročně). Více na factchecker-asistent.cz #FactCheck"
-    
+        # Příklad dodatečného požadavku pro sociální shrnutí
+        social_resp = openai.ChatCompletion.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": "Napiš tweet shrnující výsledek analýzy."},
+                {"role": "user", "content": result["analysis"]}
+            ]
+        )
+        result["social"] = social_resp.choices[0].message.content
+
     return result
 
 @app.route('/')
