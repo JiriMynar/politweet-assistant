@@ -5,15 +5,18 @@ from PIL import Image
 import io
 import base64
 
-# Nastav API klíč (doporučeno přes proměnnou prostředí)
+# Nastavení klíče OpenAI (ideálně přes proměnnou prostředí)
 openai.api_key = os.environ.get("OPENAI_API_KEY")
 
 st.set_page_config(page_title="Univerzální Factchecker", page_icon="✅", layout="centered")
 
 st.title("🕵️‍♂️ Univerzální Factchecker")
-st.write("Nahraj obrázek **nebo** zadej textové tvrzení k ověření. Výsledek dostaneš s detailním vysvětlením a zdroji.")
+st.write(
+    "Nahraj obrázek **nebo** zadej textové tvrzení k ověření. "
+    "Výsledek dostaneš s detailním vysvětlením a zdroji. "
+    "Hodnocení je na pětistupňové škále: **Pravda, Spíše pravda, Zavádějící, Spíše lež, Lež**."
+)
 
-# Prompt pro oba případy
 ANALYZE_PROMPT = (
     "Analyzuj předložené tvrzení (nebo informaci na obrázku) a ověř jeho pravdivost na základě dostupných faktických informací. "
     "Hodnoť výsledek na této pětistupňové škále:\n"
@@ -77,15 +80,15 @@ def get_factcheck_result(image_file=None, text=None):
 def render_status(status_line):
     status_line = status_line.strip().lower()
     if "pravda" in status_line and "spíše" not in status_line:
-        st.success(status_line.capitalize())
+        st.success("🟢 " + status_line.capitalize())
     elif "spíše pravda" in status_line:
-        st.info(status_line.capitalize())
+        st.info("🟢 " + status_line.capitalize())
     elif "zavádějící" in status_line:
-        st.warning(status_line.capitalize())
+        st.warning("🟠 " + status_line.capitalize())
     elif "spíše lež" in status_line:
-        st.error(status_line.capitalize())
+        st.error("🔴 " + status_line.capitalize())
     elif "lež" in status_line:
-        st.error(status_line.capitalize())
+        st.error("🔴 " + status_line.capitalize())
     else:
         st.write(status_line)
 
@@ -107,7 +110,7 @@ if submitted:
         if error:
             st.error(error)
         else:
-            # Zkus rozparsovat status
+            # Rozparsování odpovědi
             lines = result.split("\n")
             status_line = next((l for l in lines if l.lower().startswith("status:")), None)
             vysvetleni_idx = next((i for i,l in enumerate(lines) if l.lower().startswith("vysvětlení:")), None)
