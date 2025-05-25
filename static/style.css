@@ -71,4 +71,53 @@ footer{text-align:center;font-size:.85rem;padding:1rem 0;color:#6b7280}
 @media(max-width:480px){
   #dropZone{padding:1.25rem 1rem}
   #analysisTable td,#analysisTable th{padding:.5rem}
+
+/* ===== NOVÉ SEKCE A NAV ===== */
+nav{
+  background:#1f2937;
+  color:#fff;
+  padding:.75rem 1.5rem;
+  display:flex;
+  gap:1.5rem;
+  justify-content:center;
+  flex-wrap:wrap;
 }
+nav a{
+  color:#fff;
+  text-decoration:none;
+  font-weight:600;
+}
+nav a:hover{
+  text-decoration:underline;
+}
+
+section{
+  margin:3rem auto;
+  max-width:800px;
+  padding:0 1rem;
+}
+
+section h2{
+  font-size:1.75rem;
+  margin-bottom:.75rem;
+  color:#1f2937;
+}
+
+section p{
+  line-height:1.6;
+  margin-bottom:1rem;
+}
+
+pre{
+  background:#f5f5f5;
+  padding:1rem;
+  border-radius:8px;
+  overflow-x:auto;
+}
+
+.qr{
+  width:200px;
+  height:auto;
+  display:block;
+  margin:1rem auto;
+}}
