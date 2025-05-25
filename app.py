@@ -1,13 +1,13 @@
 from flask import Flask, render_template, request, jsonify
 import os
-import openai
+from openai import OpenAI
 from PIL import Image
 import io
 import base64
 
 app = Flask(__name__)
 
-openai.api_key = os.environ.get("OPENAI_API_KEY")
+client = OpenAI()
 
 ANALYZE_PROMPT = (
     "Analyzuj předložené tvrzení (nebo informaci na obrázku) a ověř jeho pravdivost na základě dostupných faktických informací. "
@@ -27,7 +27,7 @@ ANALYZE_PROMPT = (
 )
 
 def analyze_with_gpt(text):
-    response = openai.ChatCompletion.create(
+  response =   client.chat.completions.create
         model="gpt-4o",
         messages=[
             {"role": "system", "content": ANALYZE_PROMPT},
@@ -63,4 +63,4 @@ def analyze():
         return jsonify({"error": f"Nastala chyba: {str(e)}"}), 500
 
 if __name__ == "__main__":
-    app.run(debug=True)
+app.run(debug=False)
