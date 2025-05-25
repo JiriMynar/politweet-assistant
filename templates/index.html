@@ -6,24 +6,32 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <h1>Factchecker Asistent</h1>
-
-    <form id="analyzeForm" action="/analyze" method="post" enctype="multipart/form-data">
-        <label for="image">Obrázek k analýze:</label>
-        <input type="file" id="image" name="image" accept="image/*"><br>
-        <p>nebo</p>
-        <label for="text">Text k analýze:</label>
-        <textarea id="text" name="text" rows="4" cols="40" placeholder="Vložte text k ověření..."></textarea><br>
-        <button type="submit">Analyzovat</button>
-    </form>
-
-    {% if error %}
-        <div class="error">{{ error }}</div>
-    {% endif %}
-
-    {% if analysis %}
-        <h2>Výsledek</h2>
-        <pre>{{ analysis }}</pre>
-    {% endif %}
+    <main class="card">
+        <h1>Factchecker Asistent</h1>
+        <div id="dropZone" tabindex="0">
+            <div class="dz-content">
+                <span class="dz-icon">🖼️</span>
+                <span class="dz-pick">Klikni nebo přetáhni obrázek sem</span>
+            </div>
+            <img id="preview" class="preview hidden" alt="Náhled" />
+        </div>
+        <input type="file" id="image" accept="image/*" style="display:none" />
+        <textarea id="text" rows="4" cols="40" placeholder="Vložte text k ověření..."></textarea>
+        <button id="submitBtn" disabled>Analyzovat</button>
+        <div class="loader hidden" id="loader">
+            <div class="spinner"></div> Analyzuji...
+        </div>
+        <div class="result hidden" id="result">
+            <table id="analysisTable"></table>
+            <div id="sourcesBox" class="hidden">
+                <h3>Zdroje</h3>
+                <ul id="sourcesList"></ul>
+            </div>
+        </div>
+    </main>
+    <footer>
+        Vytvořil <a href="https://github.com/JiriMynar" target="_blank">JiriMynar</a> &copy; 2025
+    </footer>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>
