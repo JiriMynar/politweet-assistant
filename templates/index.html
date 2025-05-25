@@ -1,159 +1,21 @@
 <!DOCTYPE html>
 <html lang="cs">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-  <title>Politweet Asistent</title>
-  <!-- Globální styly -->
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
-  <!-- Lucide ikony -->
-  <script src="https://unpkg.com/lucide@latest"></script>
+    <meta charset="UTF-8">
+    <title>Politweet Asistent</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-  <main class="card">
     <h1>Politweet Asistent</h1>
-    <p>Nahrajte snímek obrazovky tweetu politika a během pár vteřin získáte AI analýzu.</p>
 
-    <!-- Formulář / drop zóna -->
-    <form id="uploadForm" action="/analyze" method="post" enctype="multipart/form-data">
-      <div id="dropZone" tabindex="0">
-        <img id="preview" class="preview hidden" alt="Náhled obrázku" />
-        <div id="dzContent" class="dz-content">
-          <i class="dz-icon" data-lucide="image"></i>
-          <span>
-            Přetáhněte obrázek sem<br />
-            nebo <span class="dz-pick">vyberte soubor</span>
-          </span>
-        </div>
-        <input id="fileInput" type="file" name="image" accept="image/*" hidden required />
-      </div>
-
-      <button id="submitBtn" type="submit" disabled>Analyzovat</button>
-
-      <div id="loader" class="loader hidden">
-        <div class="spinner"></div>
-        <span>Probíhá analýza…</span>
-      </div>
+    <form action="" method="post" enctype="multipart/form-data">
+        <input type="file" name="image" accept="image/*" required>
+        <button type="submit">Analyzovat</button>
     </form>
 
-    <!-- Výsledek -->
-    <div id="result" class="result hidden">
-      <h2>Výsledek</h2>
-      <table id="analysisTable"></table>
-    </div>
-  </main>
-
-  <footer>© 2025 Politweet Asistent</footer>
-
-  <!-- JavaScript (inline) – žádné externí bundlery  -->
-  <script>
-    // inicializace ikon
-    lucide.createIcons();
-
-    const dropZone = document.getElementById("dropZone");
-    const fileInput = document.getElementById("fileInput");
-    const preview = document.getElementById("preview");
-    const dzContent = document.getElementById("dzContent");
-    const submitBtn = document.getElementById("submitBtn");
-    const loader = document.getElementById("loader");
-    const resultBox = document.getElementById("result");
-    const analysisTable = document.getElementById("analysisTable");
-
-    // pomocná fce: reset celé UI
-    function resetUI() {
-      preview.src = "";
-      preview.classList.add("hidden");
-      dzContent.classList.remove("hidden");
-      dropZone.classList.remove("has-image");
-      submitBtn.disabled = true;
-      loader.classList.add("hidden");
-      resultBox.classList.add("hidden");
-      analysisTable.innerHTML = "";
-    }
-
-    // drag‑and‑drop logika
-    ["dragover", "dragenter"].forEach(evt => {
-      dropZone.addEventListener(evt, e => {
-        e.preventDefault();
-        dropZone.classList.add("dragover");
-      });
-    });
-    ["dragleave", "drop"].forEach(evt => {
-      dropZone.addEventListener(evt, e => {
-        e.preventDefault();
-        dropZone.classList.remove("dragover");
-      });
-    });
-    dropZone.addEventListener("drop", e => {
-      const file = e.dataTransfer.files[0];
-      if (file) handleFile(file);
-    });
-
-    // kliknutí pro otevření dialogu
-    dropZone.addEventListener("click", () => fileInput.click());
-    dropZone.addEventListener("keydown", e => {
-      if (e.key === "Enter" || e.key === " ") {
-        e.preventDefault();
-        fileInput.click();
-      }
-    });
-    document.querySelector(".dz-pick").addEventListener("click", e => {
-      e.stopPropagation();
-      fileInput.click();
-    });
-
-    // file‑input
-    fileInput.addEventListener("change", () => {
-      const file = fileInput.files[0];
-      if (file) handleFile(file);
-    });
-
-    function handleFile(file) {
-      if (!file.type.startsWith("image/")) return alert("Vyberte prosím obrázek.");
-      preview.src = URL.createObjectURL(file);
-      preview.onload = () => URL.revokeObjectURL(preview.src);
-      preview.classList.remove("hidden");
-      dzContent.classList.add("hidden");
-      dropZone.classList.add("has-image");
-      submitBtn.disabled = false;
-    }
-
-    // odeslání formuláře AJAXem
-    document.getElementById("uploadForm").addEventListener("submit", async e => {
-      e.preventDefault();
-      const file = fileInput.files[0];
-      if (!file) return;
-
-      submitBtn.disabled = true;
-      loader.classList.remove("hidden");
-      resultBox.classList.add("hidden");
-      analysisTable.innerHTML = "";
-
-      const formData = new FormData();
-      formData.append("image", file);
-
-      try {
-        const res = await fetch("/analyze", {
-          method: "POST",
-          body: formData,
-        });
-        const data = await res.json();
-        if (data.error) throw new Error(data.error);
-        renderAnalysis(data.analysis || data.result || "Bez výsledku");
-      } catch (err) {
-        alert("Chyba: " + err.message);
-        resetUI();
-      } finally {
-        loader.classList.add("hidden");
-        submitBtn.disabled = false;
-      }
-    });
-
-    function renderAnalysis(text) {
-      // Jednoduché zobrazení – vložíme řetězec do jediné buňky tabulky
-      analysisTable.innerHTML = `<tr><td>${text.replace(/\n/g, "<br>")}</td></tr>`;
-      resultBox.classList.remove("hidden");
-    }
-  </script>
+    {% if analysis %}
+        <h2>Výsledek</h2>
+        <pre>{{ analysis }}</pre>
+    {% endif %}
 </body>
 </html>
