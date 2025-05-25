@@ -2,7 +2,7 @@ import os
 import io
 import base64
 import logging
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from PIL import Image
@@ -44,62 +44,80 @@ def image_to_base64(file_storage) -> str:
 def index():
     return render_template("index.html")
 
-
 @app.route("/analyze", methods=["POST"])
 @limiter.limit("5 per minute")
 def analyze():
-    if "image" not in request.files:
-        return jsonify(error="Žádný soubor nebyl odeslán."), 400
+    image_file = request.files.get("image")
+    text = request.form.get("text", "").strip()
+    error = None
+    analysis = None
 
-    image_file = request.files["image"]
+    if image_file and image_file.filename:
+        # limit 5 MB
+        image_file.seek(0, os.SEEK_END)
+        if image_file.tell() > 5 * 1024 * 1024:
+            error = "Soubor je příliš velký (max 5 MB)."
+            return render_template("index.html", error=error)
+        image_file.seek(0)
 
-    # limit 5 MB
-    image_file.seek(0, os.SEEK_END)
-    if image_file.tell() > 5 * 1024 * 1024:
-        return jsonify(error="Soubor je příliš velký (max 5 MB)."), 400
-    image_file.seek(0)
-
-    try:
-        b64_image = image_to_base64(image_file)
-
-        user_prompt = (
-            "Na vloženém obrázku je politik a jeho tweet. "
-            "Vytěž z něj hlavní tvrzení, ověř jeho pravdivost a uveď rating "
-            "(True/Partially True/False). "
-            "Uveď také 1–2 stručné zdroje (např. odkaz na článek nebo oficiální statistiku). "
-            "Shrň výsledek maximálně ve 3 větách. Piš česky a srozumitelně."
-        )
-
-        # ⬇️  Hlavní oprava – image_url MUSÍ být objekt s klíčem 'url'
-        response = openai.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "image_url",
-                            "image_url": {
-                                "url": f"data:image/png;base64,{b64_image}"
-                                # volitelně: "detail": "auto"
+        try:
+            b64_image = image_to_base64(image_file)
+            user_prompt = (
+                "Na vloženém obrázku je tvrzení nebo informace. "
+                "Vytěž hlavní tvrzení, ověř jeho pravdivost a uveď rating (True/Partially True/False). "
+                "Uveď také 1–2 stručné zdroje (např. odkaz na článek nebo oficiální statistiku). "
+                "Shrň výsledek maximálně ve 3 větách. Piš česky a srozumitelně."
+            )
+            response = openai.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "image_url",
+                                "image_url": {
+                                    "url": f"data:image/png;base64,{b64_image}"
+                                },
                             },
-                        },
-                        {
-                            "type": "text",
-                            "text": user_prompt,
-                        },
-                    ],
-                }
-            ],
+                            {
+                                "type": "text",
+                                "text": user_prompt,
+                            },
+                        ],
+                    }
+                ],
+            )
+            analysis = response.choices[0].message.content
+            return render_template("index.html", analysis=analysis)
+        except Exception as e:
+            logger.exception("Chyba při analýze obrázku")
+            error = f"Chyba při analýze obrázku: {str(e)}"
+            return render_template("index.html", error=error)
+
+    elif text:
+        user_prompt = (
+            "Ověř pravdivost následujícího tvrzení nebo informace. "
+            "Vrať rating (True/Partially True/False), stručné odůvodnění a 1–2 zdroje. "
+            "Piš česky a srozumitelně.\n\n"
+            f"Tvrzení: {text}"
         )
-
-        answer = response.choices[0].message.content
-        return jsonify(analysis=answer)
-
-    except Exception as e:
-        logger.exception("Chyba při analýze obrázku")
-        return jsonify(error=str(e)), 500
-
+        try:
+            response = openai.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "user", "content": user_prompt}
+                ],
+            )
+            analysis = response.choices[0].message.content
+            return render_template("index.html", analysis=analysis)
+        except Exception as e:
+            logger.exception("Chyba při analýze textu")
+            error = f"Chyba při analýze textu: {str(e)}"
+            return render_template("index.html", error=error)
+    else:
+        error = "Nevyplnili jste obrázek ani text."
+        return render_template("index.html", error=error)
 
 # ---------- start aplikace ----------
 if __name__ == "__main__":
