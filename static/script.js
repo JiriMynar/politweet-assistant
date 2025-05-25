@@ -78,7 +78,9 @@ function parsePlain(txt){
   let verdict="Unknown";
   if(/\bLež\b/i.test(clean)) verdict="False";
   else if(/\bPravda\b/i.test(clean) && !/\bLež\b/i.test(clean)) verdict="True";
-  else if(/Zavádějící|spíše/i.test(clean)) verdict="Partial";
+el        else if(/\bspíše pravda\b/i.test(clean)) verdict="Mostly True";
+        else if(/\bspíše lež\b/i.test(clean)) verdict="Mostly False";
+        else if(/\bzavádějící\b/i.test(clean)) verdict="Partial";
 
   const linkRe=/\[(.*?)\]\((https?:\/\/[^\s)]+)\)/g;
   const sources=[]; let m;
