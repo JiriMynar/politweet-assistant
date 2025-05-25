@@ -32,6 +32,24 @@
     <footer>
         Vytvořil <a href="https://github.com/JiriMynar" target="_blank">JiriMynar</a> &copy; 2025
     </footer>
+    <section id="about">
+  <h2>Jak aplikace funguje</h2>
+  <p>Po nahrání textu nebo obrázku aplikace využije model GPT‑4o k analýze tvrzení a vrátí přehledné vyhodnocení pravdivosti spolu se zdroji.</p>
+</section>
+
+<section id="prompt">
+  <h2>Použitý prompt</h2>
+  <pre>{{ ANALYZE_PROMPT }}</pre>
+</section>
+
+<section id="support">
+  <h2>Podpořte projekt</h2>
+  <p>Pokud se vám aplikace líbí a chcete přispět na její další vývoj, můžete využít QR kód níže:</p>
+  <img src="{{ url_for('static', filename='qr.png') }}" alt="QR kód pro podporu" class="qr">
+</section>
+
+</body>
+</html>
     <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>
