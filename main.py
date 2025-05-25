@@ -1,183 +1,202 @@
-"""
-Factchecker Assistant – hlavní spouštěcí skript
-----------------------------------------------
-Zjednodušená, ale stále robustní verze pro snadné nasazení.
-
-• Flask backend + Flask‑Limiter (rate‑limit)
-• Oficiální klient `openai.OpenAI` (>= 1.3)
-• Kontrola proměnné **OPENAI_API_KEY** už při startu
-• Validace velikosti, rozlišení a typu obrázku
-• Přehledné JSON chyby + jednoduchý retry při přetížení API
-
-Před spuštěním:
-    export OPENAI_API_KEY="YOUR_KEY"
-    pip install -r requirements.txt
-"""
-from __future__ import annotations
-
-import base64
-import io
+import sys
 import os
-import time
-from typing import Any, Dict, List
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))  # DON'T CHANGE THIS !!!
 
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, render_template, request, jsonify, url_for
+import os
+import base64
+from io import BytesIO
+from PIL import Image
+import time
+import json
+import openai
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-from PIL import Image
-
-from openai import OpenAI
-from openai._exceptions import (
-    APITimeoutError,
-    AuthenticationError,
-    BadRequestError,
-    RateLimitError,
-)
-
-# ---------------------------------------------------------------------------
-# Konfigurace
-# ---------------------------------------------------------------------------
-ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "webp"}
-MAX_PIXEL_COUNT = 2048 * 2048          # max počet pixelů  (≈ 4 Mpx)
-MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024 # 20 MB – tvrdý limit OpenAI
-OPENAI_TIMEOUT = 30                    # s
-
-api_key = os.getenv("OPENAI_API_KEY")
-if not api_key:
-    raise RuntimeError("Proměnná OPENAI_API_KEY není nastavena!")
-
-client = OpenAI(api_key=api_key)
 
 app = Flask(__name__)
-app.config.update(UPLOAD_FOLDER="uploads", MAX_CONTENT_LENGTH=MAX_FILE_SIZE_BYTES)
 
-limiter = Limiter(get_remote_address, app=app, default_limits=["10/minute"])
+# Nastavení rate limiteru
+limiter = Limiter(
+    get_remote_address,
+    app=app,
+    default_limits=["200 per day", "50 per hour"],
+    storage_uri="memory://",
+)
 
-# ---------------------------------------------------------------------------
-# Pomocné funkce
-# ---------------------------------------------------------------------------
+# Nastavení OpenAI API klíče z proměnné prostředí
+openai.api_key = os.getenv("OPENAI_API_KEY")
+if not openai.api_key:
+    print("VAROVÁNÍ: OPENAI_API_KEY není nastaven. API volání nebudou fungovat.")
 
-def allowed_file(filename: str) -> bool:
-    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
-
-
-def image_to_data_url(image: Image.Image, fmt: str) -> str:
-    """Převede PIL obrázek na base64 data‑URL (nutné pro Vision model)."""
-    buf = io.BytesIO()
-    image.save(buf, format=fmt.upper())
-    encoded = base64.b64encode(buf.getvalue()).decode()
-    return f"data:image/{fmt};base64,{encoded}"
-
-
-def build_messages(prompt: str, img_data_url: str | None = None) -> List[Dict[str, Any]]:
-    if img_data_url:
-        return [{
-            "role": "user",
-            "content": [
-                {"type": "image_url", "image_url": {"url": img_data_url}},
-                {"type": "text", "text": prompt},
-            ],
-        }]
-    return [{"role": "user", "content": prompt}]
-
-
-def chat_completion(messages: List[Dict[str, Any]], model: str = "gpt-4o-mini", temperature: float = 0.2) -> str:
-    """Zavolá OpenAI Chat‑Completion se 4 retenzními pokusy při 429."""
-    delay = 1.0
-    for attempt in range(5):
-        try:
-            resp = client.chat.completions.create(
-                model=model,
-                messages=messages,
-                temperature=temperature,
-                timeout=OPENAI_TIMEOUT,
-            )
-            return resp.choices[0].message.content  # type: ignore[attr-defined]
-        except RateLimitError:
-            if attempt == 4:
-                raise
-            time.sleep(delay)
-            delay *= 2
-        except (APITimeoutError, BadRequestError, AuthenticationError):
-            raise
-    raise RuntimeError("Nepodařilo se zavolat OpenAI ani po opakováních.")
-
-# ---------------------------------------------------------------------------
-# Routy – URL adresy aplikace
-# ---------------------------------------------------------------------------
-
-@app.route("/")
-def index():
-    # jednoduchá uvítací stránka (může být statická šablona)
-    return render_template("index.html")
-
-
-@app.route("/prompt", endpoint="prompt")
-def prompt_view():
-    return render_template("prompt.html")
-
-
-@app.route("/support", endpoint="support")
-def support_view():
-    return render_template("support.html")
-
-
-@app.route("/analyze", methods=["POST"])
-@limiter.limit("5/minute")
-def analyze():
-    """Zpracuje buď textový prompt (JSON), nebo obrázek (form‑data)."""
-    if request.is_json:
-        data = request.get_json(silent=True) or {}
-        prompt = (data.get("prompt") or "").strip()
-        if not prompt:
-            return jsonify(error="'prompt' musí být vyplněn."), 400
-        messages = build_messages(prompt)
-    else:  # form‑data
-        if "image" not in request.files:
-            return jsonify(error="Chybí pole 'image'."), 400
-        file = request.files["image"]
-        prompt = (request.form.get("prompt") or "Analyzuj obrázek.").strip()
-        # pokud uživatel nahrál obrázek bez názvu (např. drag‑and‑drop z webu),
-        # soubor může mít prázdný filename – v tom případě se pokusíme
-        # odvodit koncovku z MIME typu.
-        file_ext = ""
-        if file.filename and "." in file.filename:
-            file_ext = file.filename.rsplit(".", 1)[1].lower()
-        elif file.mimetype and file.mimetype.startswith("image/"):
-            # image/png -> png
-            file_ext = file.mimetype.split("/", 1)[1].lower()
-
-        if file_ext not in ALLOWED_EXTENSIONS:
-            return jsonify(error="Nepodporovaný typ souboru."), 400
-        try:
-            img = Image.open(file.stream)
-        except Exception:
-            return jsonify(error="Soubor není validní obrázek."), 400
-        if img.width * img.height > MAX_PIXEL_COUNT:
-            return jsonify(error="Obrázek přesahuje 2048×2048 px."), 400
-        img_data_url = image_to_data_url(img, img.format.lower())
-        messages = build_messages(prompt, img_data_url)
-
-    # --- volání OpenAI ---
+# Funkce pro analýzu obsahu pomocí OpenAI API
+def analyze_content(text=None, image=None, generate_social=False):
     try:
-        content = chat_completion(messages)
-    except AuthenticationError:
-        return jsonify(error="Nesprávný OPENAI_API_KEY."), 500
-    except APITimeoutError:
-        return jsonify(error="OpenAI API neodpovídá."), 504
-    except BadRequestError as exc:
-        return jsonify(error=f"Chybný požadavek: {exc}"), 400
-    except RateLimitError:
-        return jsonify(error="OpenAI je přetížené, zkuste to za chvíli."), 429
-    except Exception:
-        return jsonify(error="Neočekávaná chyba na serveru."), 500
+        messages = []
+        
+        # Základní systémový prompt
+        system_prompt = """Jsi expertní fact-checker, který analyzuje tvrzení v textech a obrázcích. Tvým úkolem je:
 
-    return jsonify(result=content)
+1. Důkladně analyzovat předložené tvrzení nebo obrázek
+2. Určit pravdivost na pětistupňové škále:
+   1. Pravda - tvrzení je zcela pravdivé a úplné
+   2. Spíše pravda - tvrzení je převážně pravdivé s drobnými nepřesnostmi
+   3. Zavádějící - tvrzení obsahuje pravdivé prvky, ale je prezentováno zavádějícím způsobem
+   4. Spíše lež - tvrzení je převážně nepravdivé, ale obsahuje některé pravdivé prvky
+   5. Lež - tvrzení je zcela nepravdivé
 
-# ---------------------------------------------------------------------------
-# Spuštění
-# ---------------------------------------------------------------------------
+3. Poskytnout podrobné vysvětlení na úrovni vysokoškoláka, které zahrnuje:
+   - Kontext a souvislosti
+   - Relevantní fakta a statistiky
+   - Vysvětlení, proč je tvrzení pravdivé/nepravdivé/zavádějící
+   - U částečně pravdivých tvrzení uvést, jak by mělo být správně formulováno
 
-if __name__ == "__main__":
-    port = int(os.getenv("PORT", "5000"))
-    app.run(host="0.0.0.0", port=port)
+4. Uvést konkrétní, ověřitelné zdroje, které podporují tvé hodnocení
+   - Preferovat primární zdroje (studie, oficiální statistiky, původní dokumenty)
+   - Uvádět přímé odkazy na zdroje
+
+Formát odpovědi:
+Status: [číslo stupně. název stupně]
+
+Vysvětlení:
+[Podrobné vysvětlení]
+
+Zdroje:
+[Seznam zdrojů s odkazy]"""
+        
+        messages.append({"role": "system", "content": system_prompt})
+        
+        # Přidání uživatelského vstupu
+        user_content = []
+        
+        if text:
+            user_content.append({"type": "text", "text": text})
+        
+        if image:
+            # Převod obrázku na base64
+            buffered = BytesIO()
+            image.save(buffered, format="JPEG")
+            img_str = base64.b64encode(buffered.getvalue()).decode('utf-8')
+            
+            user_content.append({
+                "type": "image_url",
+                "image_url": {
+                    "url": f"data:image/jpeg;base64,{img_str}"
+                }
+            })
+        
+        messages.append({"role": "user", "content": user_content})
+        
+        # Volání OpenAI API
+        response = openai.chat.completions.create(
+            model="gpt-4o",
+            messages=messages,
+            temperature=0.2,
+            max_tokens=1000
+        )
+        
+        result = {
+            "analysis": response.choices[0].message.content
+        }
+        
+        # Pokud je požadována odpověď pro sociální sítě
+        if generate_social:
+            social_prompt = f"""Na základě této analýzy vytvoř krátkou odpověď pro sociální sítě (max 280 znaků), 
+            která shrne hlavní zjištění. Začni s označením OVĚŘENO a příslušným emoji (✓, ❓, ✗) podle hodnocení.
+            
+            Analýza:
+            {response.choices[0].message.content}"""
+            
+            social_response = openai.chat.completions.create(
+                model="gpt-4o",
+                messages=[
+                    {"role": "system", "content": "Jsi stručný a výstižný fact-checker pro sociální sítě."},
+                    {"role": "user", "content": social_prompt}
+                ],
+                temperature=0.7,
+                max_tokens=280
+            )
+            
+            result["social"] = social_response.choices[0].message.content
+        
+        return result
+    
+    except Exception as e:
+        print(f"Chyba při volání OpenAI API: {str(e)}")
+        # Fallback na simulovanou odpověď v případě chyby
+        result = {
+            "analysis": "Status: 3. Zavádějící\n\nVysvětlení:\nOmlouváme se, ale došlo k chybě při analýze obsahu. Zkuste to prosím znovu později nebo kontaktujte správce aplikace.\n\nChyba: " + str(e)
+        }
+        
+        if generate_social:
+            result["social"] = "OVĚŘENO ❓ Došlo k chybě při analýze. Zkuste to prosím znovu později. #FactCheck"
+        
+        return result
+
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+@app.route('/prompt')
+def prompt():
+    # Ukázkový prompt pro šablonu
+    analyze_prompt = """Jsi expertní fact-checker, který analyzuje tvrzení v textech a obrázcích. Tvým úkolem je:
+
+1. Důkladně analyzovat předložené tvrzení nebo obrázek
+2. Určit pravdivost na pětistupňové škále:
+   1. Pravda - tvrzení je zcela pravdivé a úplné
+   2. Spíše pravda - tvrzení je převážně pravdivé s drobnými nepřesnostmi
+   3. Zavádějící - tvrzení obsahuje pravdivé prvky, ale je prezentováno zavádějícím způsobem
+   4. Spíše lež - tvrzení je převážně nepravdivé, ale obsahuje některé pravdivé prvky
+   5. Lež - tvrzení je zcela nepravdivé
+
+3. Poskytnout podrobné vysvětlení na úrovni vysokoškoláka, které zahrnuje:
+   - Kontext a souvislosti
+   - Relevantní fakta a statistiky
+   - Vysvětlení, proč je tvrzení pravdivé/nepravdivé/zavádějící
+   - U částečně pravdivých tvrzení uvést, jak by mělo být správně formulováno
+
+4. Uvést konkrétní, ověřitelné zdroje, které podporují tvé hodnocení
+   - Preferovat primární zdroje (studie, oficiální statistiky, původní dokumenty)
+   - Uvádět přímé odkazy na zdroje
+
+Formát odpovědi:
+Status: [číslo stupně. název stupně]
+
+Vysvětlení:
+[Podrobné vysvětlení]
+
+Zdroje:
+[Seznam zdrojů s odkazy]"""
+
+    return render_template('prompt.html', ANALYZE_PROMPT=analyze_prompt)
+
+@app.route('/support')
+def support():
+    return render_template('support.html')
+
+@app.route('/api/analyze', methods=['POST'])
+@limiter.limit("10 per minute")
+def api_analyze():
+    text = request.form.get('text', '')
+    image_file = request.files.get('image')
+    generate_social = request.form.get('generate_social') == 'true'
+    
+    image = None
+    if image_file:
+        try:
+            image = Image.open(image_file.stream)
+        except Exception as e:
+            return jsonify({"error": str(e)}), 400
+    
+    # Kontrola, zda byl poskytnut alespoň jeden vstup
+    if not text and not image:
+        return jsonify({"error": "Musí být poskytnut text nebo obrázek"}), 400
+    
+    try:
+        result = analyze_content(text, image, generate_social)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000)
