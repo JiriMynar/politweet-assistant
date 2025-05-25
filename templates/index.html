@@ -4,16 +4,17 @@
   <meta charset="UTF-8" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Politweet Asistent – Fact‑checking nástroj</title>
-  <!-- Google Fonts -->
+  <title>Politweet Asistent – Fact‑checking nástroj</title>
+  <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <!-- Ikony – lucide (CDN) -->
+  <!-- Vlastní globální styl (ponechá kompatibilitu s předchozí verzí) -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  <!-- Lucide ikony -->
   <script src="https://unpkg.com/lucide@latest"></script>
-  <!-- Vlastní styly (lze oddělit do static/style.css) -->
+  <!-- Minimalistická paleta pro případ, že externí CSS není k dispozici -->
   <style>
-    /* ======= VZHLED "FACT‑CHECKER" ======= */
     :root {
       --dark: #0d2538;
       --primary: #16c79a;
@@ -21,90 +22,23 @@
       --card: #ffffff;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    html { scroll-behavior: smooth; }
-    body {
-      font-family: "Inter", sans-serif;
-      color: var(--dark);
-      background: var(--light);
-      line-height: 1.6;
-    }
+    body { font-family: "Inter", sans-serif; background: var(--light); color: var(--dark); line-height: 1.6; }
     a { color: var(--primary); text-decoration: none; }
-    /* NAVBAR */
-    header {
-      background: var(--card);
-      box-shadow: 0 2px 4px rgba(0,0,0,.05);
-      position: sticky;
-      top: 0;
-      z-index: 1000;
-    }
-    .container { width: min(90%, 1100px); margin-inline: auto; }
-    nav { display: flex; align-items: center; justify-content: space-between; padding: 1rem 0; }
-    nav ul { display: flex; gap: 1.5rem; list-style: none; }
+    header { background: var(--card); box-shadow: 0 2px 4px rgba(0,0,0,.05); position: sticky; top: 0; z-index: 1000; }
+    .container { width: min(92%, 1080px); margin-inline: auto; }
+    nav { display: flex; justify-content: space-between; align-items: center; padding: 1rem 0; }
+    nav ul { list-style: none; display: flex; gap: 1.5rem; }
     nav ul li a { font-weight: 500; }
-    /* HERO */
-    .hero {
-      display: grid;
-      place-items: center;
-      text-align: center;
-      padding: 6rem 0 4rem;
-      background: linear-gradient(135deg, var(--dark) 0%, #16354d 100%);
-      color: var(--light);
-    }
-    .hero h1 { font-size: clamp(2.2rem, 4vw, 3rem); margin-bottom: 1rem; }
-    .hero p { font-size: 1.125rem; opacity: 0.9; }
-    /* CARD */
-    .card {
-      background: var(--card);
-      border-radius: 1rem;
-      padding: 2rem;
-      box-shadow: 0 4px 8px rgba(0,0,0,.05);
-      margin-block: 2rem;
-    }
-    /* FORMS */
-    .file-input {
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-      align-items: center;
-    }
-    input[type="file"] {
-      padding: .75rem 1rem;
-      border: 2px dashed var(--dark);
-      border-radius: .75rem;
-      width: 100%;
-      cursor: pointer;
-      background: var(--light);
-    }
-    button.upload {
-      background: var(--primary);
-      color: var(--card);
-      font-weight: 600;
-      padding: .75rem 1.5rem;
-      border: none;
-      border-radius: .75rem;
-      cursor: pointer;
-      transition: background .2s ease;
-    }
+    .hero { text-align: center; padding: 6rem 0 4rem; background: linear-gradient(135deg, var(--dark) 0%, #16354d 100%); color: var(--light); }
+    .hero h1 { font-size: clamp(2rem, 4vw, 3rem); margin-bottom: 1rem; }
+    .hero p { font-size: 1.125rem; opacity: .9; }
+    .card { background: var(--card); border-radius: 1rem; padding: 2rem; box-shadow: 0 4px 8px rgba(0,0,0,.05); margin-block: 2rem; }
+    input[type="file"] { width: 100%; padding: .75rem 1rem; border: 2px dashed var(--dark); border-radius: .75rem; background: var(--light); cursor: pointer; }
+    button.upload { background: var(--primary); color: var(--card); font-weight: 600; padding: .75rem 1.5rem; border: none; border-radius: .75rem; cursor: pointer; transition: background .2s ease; }
     button.upload:hover { background: #13a884; }
-    /* SECTION TITLES */
-    section h2 { font-size: 1.75rem; margin-bottom: .5rem; }
-    section p.lead { font-size: 1.125rem; margin-bottom: 1.5rem; }
-    /* ANALÝZA */
-    .analysis {
-      white-space: pre-wrap;
-      background: #f0f4f8;
-      border-left: 4px solid var(--primary);
-      padding: 1rem 1.25rem;
-      border-radius: .5rem;
-    }
-    /* FOOTER */
-    footer {
-      margin-top: 4rem;
-      padding: 2rem 0;
-      background: var(--dark);
-      color: var(--light);
-      text-align: center;
-    }
+    .analysis { white-space: pre-wrap; background: #f0f4f8; border-left: 4px solid var(--primary); padding: 1rem 1.25rem; border-radius: .5rem; }
+    footer { margin-top: 4rem; text-align: center; background: var(--dark); color: var(--light); padding: 2rem 0; }
+    .flash { background: #ffe3e3; color: #721c24; border-left: 4px solid #ff6b6b; padding: .75rem 1rem; border-radius: .5rem; margin-bottom: 1.5rem; }
   </style>
 </head>
 <body>
@@ -112,7 +46,7 @@
   <header>
     <div class="container">
       <nav>
-        <a href="#" class="logo" style="font-weight:700;font-size:1.25rem">Politweet Asistent</a>
+        <a href="#" style="font-weight:700;font-size:1.25rem">Politweet Asistent</a>
         <ul>
           <li><a href="#about">O projektu</a></li>
           <li><a href="#how">Jak používat</a></li>
@@ -123,75 +57,80 @@
     </div>
   </header>
 
-  <!-- Hero sekce -->
+  <!-- Hero -->
   <section class="hero">
     <div class="container">
-      <h1>Fakt‑checking politických tweetů během několika sekund</h1>
-      <p>Nahrajte snímek obrazovky tweetu politika a získejte stručnou, srozumitelnou analýzu pomocí AI.</p>
+      <h1>Fakt‑checking tweetů v reálném čase</h1>
+      <p>Nahrajte snímek obrazovky tweetu politika a obratem získáte analýzu pomocí AI.</p>
     </div>
   </section>
 
-  <!-- Formulář / Analýza -->
+  <!-- Flash zprávy (např. chybové) -->
+  <div class="container">
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <div class="flash">{{ messages[0] }}</div>
+      {% endif %}
+    {% endwith %}
+  </div>
+
+  <!-- Upload & Výstup -->
   <div class="container">
     <section id="upload" class="card">
       <h2>Nahrát tweet</h2>
-      <p class="lead">Vyberte obrázek (PNG/JPG) s tweetem politika a klikněte na <em>Analyzovat</em>.</p>
-      <form action="/" method="post" enctype="multipart/form-data" class="file-input">
-        <input type="file" name="image" accept="image/*" required>
+      <p class="lead">Vyberte obrázek (PNG, JPG) s tweetem veřejné osobnosti a klikněte na <em>Analyzovat</em>.</p>
+      <form action="" method="post" enctype="multipart/form-data" class="file-input">
+        <input type="file" name="image" accept="image/*" required />
         <button type="submit" class="upload">Analyzovat</button>
       </form>
+
       {% if analysis %}
-        <div class="analysis" style="margin-top:2rem;">
-          {{ analysis }}
-        </div>
+        <div class="analysis" style="margin-top:2rem">{{ analysis }}</div>
+      {% elif result %}
+        <div class="analysis" style="margin-top:2rem">{{ result }}</div>
       {% endif %}
     </section>
 
     <section id="about">
       <h2>O projektu</h2>
-      <p class="lead">Politweet Asistent je open‑source webová aplikace, která využívá OpenAI Vision k analýze snímků tweetů veřejných činitelů a poskytuje rychlé shrnutí faktických tvrzení, emotivního tónu a případných manipulativních technik.</p>
+      <p class="lead">Politweet Asistent je open‑source aplikace, která využívá OpenAI Vision k rozpoznání textu z obrázku a zároveň provádí krátkou faktickou a argumentační analýzu obsahu.</p>
     </section>
 
     <section id="how">
       <h2>Jak používat</h2>
-      <ol style="margin-left:1.25rem;">
-        <li>Udělejte snímek obrazovky příslušného tweetu.</li>
-        <li>Na této stránce klikněte na <strong>Nahrát tweet</strong> a vyberte soubor.</li>
-        <li>Stiskněte <strong>Analyzovat</strong> a chvíli vyčkejte.</li>
-        <li>Výsledná analýza se zobrazí pod formulářem.</li>
+      <ol style="margin-left:1.25rem">
+        <li>Pořiďte snímek obrazovky tweetu.</li>
+        <li>Vyberte soubor v sekci <strong>Nahrát tweet</strong>.</li>
+        <li>Stiskněte tlačítko <strong>Analyzovat</strong>.</li>
+        <li>Do několika vteřin se zobrazí výsledek pod formulářem.</li>
       </ol>
     </section>
 
     <section id="support">
       <h2>Podpořte projekt</h2>
-      <p class="lead">Líbí se vám Politweet Asistent? Pomozte nám udržet projekt živý:</p>
-      <ul style="margin-left:1.25rem;">
-        <li><a href="https://github.com/JiriMynar/politweet-assistant" target="_blank">Dejte ⭐ na GitHubu</a></li>
-        <li>Pošlete nám feedback nebo nahlaste issue</li>
-        <li>Můžete přispět i finančně — brzy přidáme odkaz 🙏</li>
+      <p class="lead">Projekt je udržován dobrovolně. Pokud vám pomáhá:</p>
+      <ul style="margin-left:1.25rem">
+        <li><a href="https://github.com/JiriMynar/politweet-assistant" target="_blank" rel="noopener">Dejte ⭐ na GitHubu</a></li>
+        <li>Přidejte issue nebo pull‑request</li>
+        <li>Brzy přibude také možnost finanční podpory 🙏</li>
       </ul>
     </section>
 
     <section id="prompt">
       <h2>Ukázkový prompt</h2>
-      <p class="lead">Prompt, který používáme k analýze tweetů. Můžete si ho upravit pro vlastní experimenty:</p>
-      <pre style="background:#f0f4f8;border-left:4px solid var(--primary);padding:1rem 1.25rem;border-radius:.5rem;overflow-x:auto;">
-"You are a fact‑checking assistant. Given an image of a tweet from a public figure, output:
-1️⃣ Short neutral summary of the tweet (1–2 sentences).
-2️⃣ List any factual claims.
-3️⃣ For each claim, state whether it is verifiable and provide a brief assessment (true/false/uncertain) with one reputable source link.
-4️⃣ Highlight presence of manipulative language or logical fallacies (if any)."</pre>
+      <pre class="analysis">You are a fact‑checking assistant. Given an image of a tweet from a public figure, output:
+1️⃣ Short neutral summary of the tweet (1–2 sentences).
+2️⃣ List any factual claims.
+3️⃣ For each claim, state whether it is verifiable and provide a brief assessment (true/false/uncertain) with one reputable source link.
+4️⃣ Highlight presence of manipulative language or logical fallacies (if any).</pre>
     </section>
   </div>
 
   <!-- Footer -->
   <footer>
-    © 2025 Politweet Asistent – open‑source projekt. Vytvořeno s ❤ v ČR.
+    © 2025 Politweet Asistent – open‑source projekt. Vytvořeno s ❤ v ČR.
   </footer>
 
-  <!-- Inicializace ikon -->
-  <script>
-    lucide.createIcons();
-  </script>
+  <script>lucide.createIcons()</script>
 </body>
 </html>
