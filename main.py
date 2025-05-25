@@ -1,5 +1,9 @@
 import sys
 import os
+import logging
+from logging.handlers import RotatingFileHandler
+import traceback
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))  # DON'T CHANGE THIS !!!
 
 from flask import Flask, render_template, request, jsonify, url_for
@@ -13,6 +17,27 @@ import openai
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 
+# Nastavení logování
+log_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'logs')
+os.makedirs(log_dir, exist_ok=True)
+log_file = os.path.join(log_dir, 'app.log')
+
+# Konfigurace loggeru
+logger = logging.getLogger('politweet_assistant')
+logger.setLevel(logging.INFO)
+formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+
+# Handler pro konzoli
+console_handler = logging.StreamHandler()
+console_handler.setFormatter(formatter)
+logger.addHandler(console_handler)
+
+# Handler pro soubor s rotací (max 5MB, max 5 souborů)
+file_handler = RotatingFileHandler(log_file, maxBytes=5*1024*1024, backupCount=5)
+file_handler.setFormatter(formatter)
+logger.addHandler(file_handler)
+
+# Inicializace Flask aplikace
 app = Flask(__name__)
 
 # Nastavení rate limiteru
@@ -26,11 +51,62 @@ limiter = Limiter(
 # Nastavení OpenAI API klíče z proměnné prostředí
 openai.api_key = os.getenv("OPENAI_API_KEY")
 if not openai.api_key:
+    logger.error("VAROVÁNÍ: OPENAI_API_KEY není nastaven. API volání nebudou fungovat.")
     print("VAROVÁNÍ: OPENAI_API_KEY není nastaven. API volání nebudou fungovat.")
+
+# Třída pro vlastní výjimky
+class AnalysisError(Exception):
+    """Základní třída pro výjimky při analýze obsahu"""
+    pass
+
+class APIKeyError(AnalysisError):
+    """Výjimka pro chybějící nebo neplatný API klíč"""
+    pass
+
+class InputError(AnalysisError):
+    """Výjimka pro neplatný vstup"""
+    pass
+
+class ImageProcessingError(AnalysisError):
+    """Výjimka pro chyby při zpracování obrázku"""
+    pass
+
+class APIRequestError(AnalysisError):
+    """Výjimka pro chyby při komunikaci s API"""
+    pass
+
+class APIRateLimitError(APIRequestError):
+    """Výjimka pro překročení limitů API"""
+    pass
 
 # Funkce pro analýzu obsahu pomocí OpenAI API
 def analyze_content(text=None, image=None, generate_social=False):
+    """
+    Analyzuje text nebo obrázek pomocí OpenAI API a vrací výsledek analýzy.
+    
+    Args:
+        text (str, optional): Text k analýze. Výchozí hodnota je None.
+        image (PIL.Image, optional): Obrázek k analýze. Výchozí hodnota je None.
+        generate_social (bool, optional): Zda generovat odpověď pro sociální sítě. Výchozí hodnota je False.
+    
+    Returns:
+        dict: Výsledek analýzy obsahující klíč "analysis" a případně "social".
+        
+    Raises:
+        APIKeyError: Pokud není nastaven API klíč.
+        InputError: Pokud není poskytnut text ani obrázek.
+        ImageProcessingError: Pokud dojde k chybě při zpracování obrázku.
+        APIRequestError: Pokud dojde k chybě při komunikaci s API.
+        APIRateLimitError: Pokud dojde k překročení limitů API.
+        AnalysisError: Pro ostatní chyby při analýze.
+    """
+    # Kontrola API klíče
+    if not openai.api_key:
+        logger.error("Chybí OpenAI API klíč")
+        raise APIKeyError("OpenAI API klíč není nastaven")
+    
     try:
+        logger.info("Začátek analýzy obsahu")
         messages = []
         
         # Základní systémový prompt
@@ -72,27 +148,48 @@ Zdroje:
             user_content.append({"type": "text", "text": text})
         
         if image:
-            # Převod obrázku na base64
-            buffered = BytesIO()
-            image.save(buffered, format="JPEG")
-            img_str = base64.b64encode(buffered.getvalue()).decode('utf-8')
-            
-            user_content.append({
-                "type": "image_url",
-                "image_url": {
-                    "url": f"data:image/jpeg;base64,{img_str}"
-                }
-            })
+            try:
+                logger.info("Zpracování obrázku")
+                # Převod obrázku na base64
+                buffered = BytesIO()
+                image.save(buffered, format="JPEG")
+                img_str = base64.b64encode(buffered.getvalue()).decode('utf-8')
+                
+                user_content.append({
+                    "type": "image_url",
+                    "image_url": {
+                        "url": f"data:image/jpeg;base64,{img_str}"
+                    }
+                })
+                logger.info("Obrázek úspěšně zpracován")
+            except Exception as e:
+                logger.error(f"Chyba při zpracování obrázku: {str(e)}")
+                raise ImageProcessingError(f"Chyba při zpracování obrázku: {str(e)}")
         
         messages.append({"role": "user", "content": user_content})
         
         # Volání OpenAI API
-        response = openai.chat.completions.create(
-            model="gpt-4o",
-            messages=messages,
-            temperature=0.2,
-            max_tokens=1000
-        )
+        logger.info("Volání OpenAI API pro analýzu obsahu")
+        try:
+            response = openai.chat.completions.create(
+                model="gpt-4o",
+                messages=messages,
+                temperature=0.2,
+                max_tokens=1000
+            )
+            logger.info("Úspěšné volání OpenAI API")
+        except openai.RateLimitError as e:
+            logger.error(f"Překročení limitů OpenAI API: {str(e)}")
+            raise APIRateLimitError(f"Překročení limitů OpenAI API: {str(e)}")
+        except openai.AuthenticationError as e:
+            logger.error(f"Chyba autentizace OpenAI API: {str(e)}")
+            raise APIKeyError(f"Neplatný OpenAI API klíč: {str(e)}")
+        except openai.APIError as e:
+            logger.error(f"Chyba OpenAI API: {str(e)}")
+            raise APIRequestError(f"Chyba při komunikaci s OpenAI API: {str(e)}")
+        except Exception as e:
+            logger.error(f"Neočekávaná chyba při volání OpenAI API: {str(e)}")
+            raise AnalysisError(f"Neočekávaná chyba při analýze obsahu: {str(e)}")
         
         result = {
             "analysis": response.choices[0].message.content
@@ -100,36 +197,91 @@ Zdroje:
         
         # Pokud je požadována odpověď pro sociální sítě
         if generate_social:
-            social_prompt = f"""Na základě této analýzy vytvoř krátkou odpověď pro sociální sítě (max 280 znaků), 
-            která shrne hlavní zjištění. Začni s označením OVĚŘENO a příslušným emoji (✓, ❓, ✗) podle hodnocení.
+            logger.info("Generování odpovědi pro sociální sítě")
+            social_prompt = f"""Na základě této analýzy vytvoř krátkou odpověď pro sociální sítě (max 280 znaků),
+která shrne hlavní zjištění. Začni s označením OVĚŘENO a příslušným emoji (✓, ❓, ✗) podle hodnocení.
+
+Analýza:
+{response.choices[0].message.content}"""
             
-            Analýza:
-            {response.choices[0].message.content}"""
-            
-            social_response = openai.chat.completions.create(
-                model="gpt-4o",
-                messages=[
-                    {"role": "system", "content": "Jsi stručný a výstižný fact-checker pro sociální sítě."},
-                    {"role": "user", "content": social_prompt}
-                ],
-                temperature=0.7,
-                max_tokens=280
-            )
-            
-            result["social"] = social_response.choices[0].message.content
+            try:
+                social_response = openai.chat.completions.create(
+                    model="gpt-4o",
+                    messages=[
+                        {"role": "system", "content": "Jsi stručný a výstižný fact-checker pro sociální sítě."},
+                        {"role": "user", "content": social_prompt}
+                    ],
+                    temperature=0.7,
+                    max_tokens=200
+                )
+                result["social"] = social_response.choices[0].message.content
+                logger.info("Úspěšně vygenerována odpověď pro sociální sítě")
+            except Exception as e:
+                logger.warning(f"Chyba při generování odpovědi pro sociální sítě: {str(e)}")
+                result["social"] = "OVĚŘENO ❓ Došlo k chybě při generování odpovědi pro sociální sítě. #FactCheck"
         
+        logger.info("Analýza obsahu úspěšně dokončena")
+        return result
+    
+    except APIKeyError as e:
+        logger.error(f"Chyba API klíče: {str(e)}")
+        print(f"Chyba API klíče: {str(e)}")
+        result = {
+            "analysis": "Status: 3. Zavádějící\n\nVysvětlení:\nOmlouváme se, ale došlo k chybě s API klíčem. Zkontrolujte, zda je správně nastaven OPENAI_API_KEY."
+        }
+        if generate_social:
+            result["social"] = "OVĚŘENO ❓ Došlo k chybě s API klíčem. Zkontrolujte nastavení. #FactCheck"
+        return result
+    
+    except InputError as e:
+        logger.error(f"Chyba vstupu: {str(e)}")
+        print(f"Chyba vstupu: {str(e)}")
+        result = {
+            "analysis": "Status: 3. Zavádějící\n\nVysvětlení:\nOmlouváme se, ale nebyl poskytnut žádný text ani obrázek k analýze."
+        }
+        if generate_social:
+            result["social"] = "OVĚŘENO ❓ Nebyl poskytnut žádný obsah k analýze. #FactCheck"
+        return result
+    
+    except ImageProcessingError as e:
+        logger.error(f"Chyba zpracování obrázku: {str(e)}")
+        print(f"Chyba zpracování obrázku: {str(e)}")
+        result = {
+            "analysis": "Status: 3. Zavádějící\n\nVysvětlení:\nOmlouváme se, ale došlo k chybě při zpracování obrázku. Zkuste jiný formát nebo menší velikost."
+        }
+        if generate_social:
+            result["social"] = "OVĚŘENO ❓ Došlo k chybě při zpracování obrázku. Zkuste jiný formát. #FactCheck"
+        return result
+    
+    except APIRateLimitError as e:
+        logger.error(f"Překročení limitů API: {str(e)}")
+        print(f"Překročení limitů API: {str(e)}")
+        result = {
+            "analysis": "Status: 3. Zavádějící\n\nVysvětlení:\nOmlouváme se, ale došlo k překročení limitů API. Zkuste to prosím později."
+        }
+        if generate_social:
+            result["social"] = "OVĚŘENO ❓ Došlo k překročení limitů API. Zkuste to později. #FactCheck"
+        return result
+    
+    except APIRequestError as e:
+        logger.error(f"Chyba API požadavku: {str(e)}")
+        print(f"Chyba API požadavku: {str(e)}")
+        result = {
+            "analysis": "Status: 3. Zavádějící\n\nVysvětlení:\nOmlouváme se, ale došlo k chybě při komunikaci s API. Zkuste to prosím znovu později."
+        }
+        if generate_social:
+            result["social"] = "OVĚŘENO ❓ Došlo k chybě při komunikaci s API. Zkuste to znovu později. #FactCheck"
         return result
     
     except Exception as e:
-        print(f"Chyba při volání OpenAI API: {str(e)}")
-        # Fallback na simulovanou odpověď v případě chyby
+        logger.error(f"Neočekávaná chyba při analýze obsahu: {str(e)}")
+        logger.error(traceback.format_exc())
+        print(f"Neočekávaná chyba při analýze obsahu: {str(e)}")
         result = {
-            "analysis": "Status: 3. Zavádějící\n\nVysvětlení:\nOmlouváme se, ale došlo k chybě při analýze obsahu. Zkuste to prosím znovu později nebo kontaktujte správce aplikace.\n\nChyba: " + str(e)
+            "analysis": "Status: 3. Zavádějící\n\nVysvětlení:\nOmlouváme se, ale došlo k neočekávané chybě při analýze obsahu."
         }
-        
         if generate_social:
-            result["social"] = "OVĚŘENO ❓ Došlo k chybě při analýze. Zkuste to prosím znovu později. #FactCheck"
-        
+            result["social"] = "OVĚŘENO ❓ Došlo k chybě při analyze. Zkuste to prosím znovu později. #FactCheck"
         return result
 
 @app.route('/')
@@ -167,7 +319,7 @@ Vysvětlení:
 
 Zdroje:
 [Seznam zdrojů s odkazy]"""
-
+    
     return render_template('prompt.html', ANALYZE_PROMPT=analyze_prompt)
 
 @app.route('/support')
@@ -177,26 +329,59 @@ def support():
 @app.route('/api/analyze', methods=['POST'])
 @limiter.limit("10 per minute")
 def api_analyze():
-    text = request.form.get('text', '')
-    image_file = request.files.get('image')
-    generate_social = request.form.get('generate_social') == 'true'
+    """
+    API endpoint pro analýzu obsahu.
     
-    image = None
-    if image_file:
-        try:
-            image = Image.open(image_file.stream)
-        except Exception as e:
-            return jsonify({"error": str(e)}), 400
+    Očekává:
+    - text: Text k analýze (volitelné)
+    - image: Obrázek k analýze (volitelné)
+    - generate_social: Zda generovat odpověď pro sociální sítě (volitelné)
     
-    # Kontrola, zda byl poskytnut alespoň jeden vstup
-    if not text and not image:
-        return jsonify({"error": "Musí být poskytnut text nebo obrázek"}), 400
-    
+    Vrací:
+    - JSON s výsledkem analýzy
+    """
     try:
-        result = analyze_content(text, image, generate_social)
-        return jsonify(result)
+        logger.info("Přijat požadavek na analýzu")
+        
+        # Získání parametrů z požadavku
+        text = request.form.get('text', '')
+        image_file = request.files.get('image')
+        generate_social = request.form.get('generate_social') == 'true'
+        
+        # Inicializace proměnné pro obrázek
+        image = None
+        
+        # Zpracování obrázku, pokud byl poskytnut
+        if image_file:
+            try:
+                logger.info(f"Přijat obrázek: {image_file.filename}")
+                image = Image.open(image_file.stream)
+            except Exception as e:
+                logger.error(f"Chyba při otevírání obrázku: {str(e)}")
+                return jsonify({"error": "Chyba při zpracování obrázku"}), 400
+        
+        # Kontrola, zda byl poskytnut alespoň jeden vstup
+        if not text and not image:
+            logger.warning("Nebyl poskytnut žádný vstup (text ani obrázek)")
+            return jsonify({"error": "Musí být poskytnut text nebo obrázek"}), 400
+        
+        # Analýza obsahu
+        try:
+            logger.info("Spouštím analýzu obsahu")
+            result = analyze_content(text, image, generate_social)
+            logger.info("Analýza obsahu dokončena")
+            return jsonify(result)
+        except Exception as e:
+            logger.error(f"Chyba při analýze obsahu: {str(e)}")
+            logger.error(traceback.format_exc())
+            return jsonify({"error": f"Chyba při analýze obsahu: {str(e)}"}), 500
+    
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        logger.error(f"Neočekávaná chyba v API endpointu: {str(e)}")
+        logger.error(traceback.format_exc())
+        return jsonify({"error": f"Neočekávaná chyba: {str(e)}"}), 500
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+# Spuštění aplikace
+if __name__ == "__main__":
+    logger.info("Spouštění aplikace")
+    app.run(debug=True, host='0.0.0.0')
