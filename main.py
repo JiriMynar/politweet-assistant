@@ -1,18 +1,16 @@
 """
 Factchecker Assistant – hlavní spouštěcí skript
----------------------------------------------
-Vylepšená verze s robustnějším voláním OpenAI API, lepším ošetřením chyb
- a validací uživatelských vstupů.
+----------------------------------------------
+Vylepšená verze s robustnějším voláním OpenAI API a validací vstupů.
 
-• Flask backend + Flask‑Limiter pro základní rate‑limit
-• Oficiální klient `openai.OpenAI` (>=1.0) místo aliasu `openai.chat`
-• Striktní kontrola přítomnosti a platnosti proměnné OPENAI_API_KEY
+• Flask backend + Flask-Limiter pro základní rate-limit
+• Oficiální klient `openai.OpenAI` (>= 1.3)
+• Striktní kontrola proměnné **OPENAI_API_KEY** už při startu
 • Validace velikosti, rozlišení a typu obrázku
-• Čitelné, uživatelsky přívětivé chybové hlášky (JSON)
-• Timeout 30 s + jednoduchý exponenciální retry pro 429 a “server busy” chyby
+• Přehledné JSON chyby + retry s exponenciálním čekáním
 
-Před spuštěním:
-    export OPENAI_API_KEY="..."
+Před spuštěním:
+    export OPENAI_API_KEY="…"
     pip install -r requirements.txt
 """
 from __future__ import annotations
@@ -23,18 +21,17 @@ import os
 import time
 from typing import Any, Dict, List
 
-from flask import Flask, jsonify, redirect, render_template, request, url_for
+from flask import Flask, jsonify, render_template, request
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from PIL import Image
-from werkzeug.utils import secure_filename
 
 from openai import OpenAI
 from openai._exceptions import (  # type: ignore
+    APITimeoutError,
     AuthenticationError,
-    InvalidRequestError,
+    BadRequestError,
     RateLimitError,
-    Timeout,
 )
 
 # ---------------------------------------------------------------------------
@@ -42,10 +39,10 @@ from openai._exceptions import (  # type: ignore
 # ---------------------------------------------------------------------------
 ALLOWED_EXTENSIONS: set[str] = {"png", "jpg", "jpeg", "webp"}
 MAX_PIXEL_COUNT = 2048 * 2048  # doporučení OpenAI Vision
-MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024  # 20 MB – hard limit OpenAI
+MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024  # 20 MB – hard limit OpenAI
 OPENAI_TIMEOUT = 30  # sekund
 
-# Vyhoďte smysluplnou chybu hned při startu, když chybí API key
+# Kontrola API klíče hned při startu
 if not (api_key := os.getenv("OPENAI_API_KEY")):
     raise RuntimeError("Environment variable OPENAI_API_KEY is not set – add it before running the app!")
 
@@ -54,7 +51,7 @@ client = OpenAI(api_key=api_key)
 app = Flask(__name__)
 app.config.update(UPLOAD_FOLDER="uploads", MAX_CONTENT_LENGTH=MAX_FILE_SIZE_BYTES)
 
-# Rate limit – globálně 10/min, endpoint /analyze 5/min na IP
+# Rate-limit – globálně 10/min, endpoint /analyze 5/min na IP
 limiter = Limiter(get_remote_address, app=app, default_limits=["10/minute"])
 
 # ---------------------------------------------------------------------------
@@ -66,7 +63,7 @@ def allowed_file(filename: str) -> bool:
 
 
 def image_to_data_url(image: Image.Image, fmt: str) -> str:
-    """Převede PIL obrázek do base64 data URL."""
+    """Převede PIL obrázek do base64 data-URL."""
     buffer = io.BytesIO()
     image.save(buffer, format=fmt.upper())
     encoded = base64.b64encode(buffer.getvalue()).decode()
@@ -74,7 +71,7 @@ def image_to_data_url(image: Image.Image, fmt: str) -> str:
 
 
 def build_messages(prompt: str, img_data_url: str | None = None) -> List[Dict[str, Any]]:
-    """Sestaví payload pro Chat Completion včetně (ne)povinného obrázku."""
+    """Sestaví payload pro Chat Completion včetně (ne)povinného obrázku."""
     if img_data_url:
         return [
             {
@@ -89,8 +86,8 @@ def build_messages(prompt: str, img_data_url: str | None = None) -> List[Dict[st
 
 
 def chat_completion(messages: List[Dict[str, Any]], *, model: str = "gpt-4o-mini", temperature: float = 0.2) -> str:
-    """Volá OpenAI Chat Completion s retry mechanismem pro Rate Limit."""
-    delay = 1.0  # první retry za 1 s, pak exponenciálně
+    """Volá OpenAI Chat Completion s retry mechanismem pro Rate Limit."""
+    delay = 1.0  # první retry za 1 s, pak exponenciálně
     for attempt in range(5):
         try:
             response = client.chat.completions.create(
@@ -100,12 +97,12 @@ def chat_completion(messages: List[Dict[str, Any]], *, model: str = "gpt-4o-mini
                 timeout=OPENAI_TIMEOUT,
             )
             return response.choices[0].message.content  # type: ignore[attr-defined]
-        except RateLimitError as exc:
+        except RateLimitError:
             if attempt == 4:
                 raise  # už nezkoušet dál
             time.sleep(delay)
             delay *= 2
-        except (Timeout, InvalidRequestError, AuthenticationError):
+        except (APITimeoutError, BadRequestError, AuthenticationError):
             raise  # předáme dál do handleru
     raise RuntimeError("Unreachable retry loop – this should not happen")
 
@@ -132,14 +129,14 @@ def support_page():
 @limiter.limit("5/minute")
 def analyze():
     """Endpoint pro analýzu textu nebo obrázku."""
-    # 1) Json payload – text
+    # 1) JSON payload – text
     if request.is_json:
         data = request.get_json(silent=True) or {}
         prompt = (data.get("prompt") or "").strip()
         if not prompt:
             return jsonify(error="'prompt' nesmí být prázdný."), 400
         messages = build_messages(prompt)
-    # 2) Form‑data s obrázkem (a volitelným textem)
+    # 2) Form-data s obrázkem (a volitelným textem)
     else:
         if "image" not in request.files:
             return jsonify(error="Chybí pole 'image'."), 400
@@ -149,38 +146,33 @@ def analyze():
             return jsonify(error="Soubor nemá název."), 400
         if not allowed_file(file.filename):
             return jsonify(error="Nepodporovaný formát souboru."), 400
-        # Kontrola velikosti (už hlídá MAX_CONTENT_LENGTH), takže jen rozlišení
+        # Kontrola velikosti (MAX_CONTENT_LENGTH) a rozlišení
         try:
             img = Image.open(file.stream)
         except Exception:
             return jsonify(error="Soubor není validní obrázek."), 400
         if img.width * img.height > MAX_PIXEL_COUNT:
-            return (
-                jsonify(error="Obrázek je příliš velký; maximálně 2048×2048 px."),
-                400,
-            )
-        # Převod na base64 data‑URL
-        img_format = img.format.lower()  # e.g. "png"
+            return jsonify(error="Obrázek je příliš velký; maximálně 2048×2048 px."), 400
+        img_format = img.format.lower()
         img_data_url = image_to_data_url(img, img_format)
         messages = build_messages(prompt, img_data_url=img_data_url)
+
     # ------------------------------------------------------------------
-    # Volání OpenAI API
+    # Volání OpenAI API
     try:
         content = chat_completion(messages)
     except AuthenticationError:
-        return jsonify(error="Serverová konfigurace: API klíč je neplatný."), 500
-    except Timeout:
+        return jsonify(error="Serverová konfigurace: API klíč je neplatný."), 500
+    except APITimeoutError:
         return jsonify(error="OpenAI API neodpovídá."), 504
-    except InvalidRequestError as exc:
+    except BadRequestError as exc:
         return jsonify(error=f"Chybný požadavek: {exc}"), 400
     except RateLimitError:
         return jsonify(error="OpenAI API je momentálně přetížené, zkuste to za chvíli."), 429
     except Exception:
-        # Logování by bylo lepší do loggeru, zde stručně
         return jsonify(error="Neočekávaná chyba na serveru."), 500
-    # ------------------------------------------------------------------
-    return jsonify(result=content)
 
+    return jsonify(result=content)
 
 # ---------------------------------------------------------------------------
 # Vstupní bod
