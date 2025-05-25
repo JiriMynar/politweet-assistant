@@ -4,3 +4,4 @@ openai==1.30.1
 Pillow==10.3.0
 Flask-Limiter==3.6.0
 httpx==0.27.2      # pin kvůli 'proxies' bugu
+streamlit
