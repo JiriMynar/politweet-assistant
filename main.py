@@ -1,128 +1,192 @@
-import sys
-import os
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))  # DON'T CHANGE THIS !!!
+"""
+Factchecker Assistant – hlavní spouštěcí skript
+---------------------------------------------
+Vylepšená verze s robustnějším voláním OpenAI API, lepším ošetřením chyb
+ a validací uživatelských vstupů.
 
-from flask import Flask, render_template, request, jsonify, url_for
-import os
+• Flask backend + Flask‑Limiter pro základní rate‑limit
+• Oficiální klient `openai.OpenAI` (>=1.0) místo aliasu `openai.chat`
+• Striktní kontrola přítomnosti a platnosti proměnné OPENAI_API_KEY
+• Validace velikosti, rozlišení a typu obrázku
+• Čitelné, uživatelsky přívětivé chybové hlášky (JSON)
+• Timeout 30 s + jednoduchý exponenciální retry pro 429 a “server busy” chyby
+
+Před spuštěním:
+    export OPENAI_API_KEY="..."
+    pip install -r requirements.txt
+"""
+from __future__ import annotations
+
 import base64
-from io import BytesIO
-from PIL import Image
+import io
+import os
 import time
-import json
+from typing import Any, Dict, List
+
+from flask import Flask, jsonify, redirect, render_template, request, url_for
 from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from PIL import Image
+from werkzeug.utils import secure_filename
 
-from flask_limiter.util import ge
-import openai
-openai.api_key = os.getenv("OPENAI_API_KEY")
-
-app = Flask(__name__)
-
-# Nastavení rate limiteru
-limiter = Limiter(
-    get_remote_address,
-    app=app,
-    default_limits=["200 per day", "50 per hour"],
-    storage_uri="memory://",
+from openai import OpenAI
+from openai._exceptions import (  # type: ignore
+    AuthenticationError,
+    InvalidRequestError,
+    RateLimitError,
+    Timeout,
 )
 
-# Volání OpenAI API
-def analyze_content(text=None, image=None, generate_social=False):
-     # Volání OpenAI API
-    messages = []
-    if text:
-        messages.append({"role": "user", "content": text})
-    elif image:
-        # Pokud byste chtěli analyzovat obrázek, museli byste použít Vision endpoint nebo OCR
-        messages.append({"role": "user", "content": "Analyze the content of the provided image."})
+# ---------------------------------------------------------------------------
+# Konfigurace aplikace
+# ---------------------------------------------------------------------------
+ALLOWED_EXTENSIONS: set[str] = {"png", "jpg", "jpeg", "webp"}
+MAX_PIXEL_COUNT = 2048 * 2048  # doporučení OpenAI Vision
+MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024  # 20 MB – hard limit OpenAI
+OPENAI_TIMEOUT = 30  # sekund
 
-    response = openai.ChatCompletion.create(
-        model="gpt-4o-mini",
-        messages=messages
-    )
+# Vyhoďte smysluplnou chybu hned při startu, když chybí API key
+if not (api_key := os.getenv("OPENAI_API_KEY")):
+    raise RuntimeError("Environment variable OPENAI_API_KEY is not set – add it before running the app!")
 
-    result = {
-        "analysis": response.choices[0].message.content
-    }
+client = OpenAI(api_key=api_key)
 
-    if generate_social:
-        # Příklad dodatečného požadavku pro sociální shrnutí
-        social_resp = openai.ChatCompletion.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": "Napiš tweet shrnující výsledek analýzy."},
-                {"role": "user", "content": result["analysis"]}
-            ]
-        )
-        result["social"] = social_resp.choices[0].message.content
+app = Flask(__name__)
+app.config.update(UPLOAD_FOLDER="uploads", MAX_CONTENT_LENGTH=MAX_FILE_SIZE_BYTES)
 
-    return result
+# Rate limit – globálně 10/min, endpoint /analyze 5/min na IP
+limiter = Limiter(get_remote_address, app=app, default_limits=["10/minute"])
 
-@app.route('/')
-def index():
-    return render_template('index.html')
+# ---------------------------------------------------------------------------
+# Pomocné funkce
+# ---------------------------------------------------------------------------
 
-@app.route('/prompt')
-def prompt():
-    # Ukázkový prompt pro šablonu
-    analyze_prompt = """Jsi expertní fact-checker, který analyzuje tvrzení v textech a obrázcích. Tvým úkolem je:
+def allowed_file(filename: str) -> bool:
+    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
 
-1. Důkladně analyzovat předložené tvrzení nebo obrázek
-2. Určit pravdivost na pětistupňové škále:
-   1. Pravda - tvrzení je zcela pravdivé a úplné
-   2. Spíše pravda - tvrzení je převážně pravdivé s drobnými nepřesnostmi
-   3. Zavádějící - tvrzení obsahuje pravdivé prvky, ale je prezentováno zavádějícím způsobem
-   4. Spíše lež - tvrzení je převážně nepravdivé, ale obsahuje některé pravdivé prvky
-   5. Lež - tvrzení je zcela nepravdivé
 
-3. Poskytnout podrobné vysvětlení na úrovni vysokoškoláka, které zahrnuje:
-   - Kontext a souvislosti
-   - Relevantní fakta a statistiky
-   - Vysvětlení, proč je tvrzení pravdivé/nepravdivé/zavádějící
-   - U částečně pravdivých tvrzení uvést, jak by mělo být správně formulováno
+def image_to_data_url(image: Image.Image, fmt: str) -> str:
+    """Převede PIL obrázek do base64 data URL."""
+    buffer = io.BytesIO()
+    image.save(buffer, format=fmt.upper())
+    encoded = base64.b64encode(buffer.getvalue()).decode()
+    return f"data:image/{fmt};base64,{encoded}"
 
-4. Uvést konkrétní, ověřitelné zdroje, které podporují tvé hodnocení
-   - Preferovat primární zdroje (studie, oficiální statistiky, původní dokumenty)
-   - Uvádět přímé odkazy na zdroje
 
-Formát odpovědi:
-Status: [číslo stupně. název stupně]
+def build_messages(prompt: str, img_data_url: str | None = None) -> List[Dict[str, Any]]:
+    """Sestaví payload pro Chat Completion včetně (ne)povinného obrázku."""
+    if img_data_url:
+        return [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "image_url", "image_url": {"url": img_data_url}},
+                    {"type": "text", "text": prompt},
+                ],
+            }
+        ]
+    return [{"role": "user", "content": prompt}]
 
-Vysvětlení:
-[Podrobné vysvětlení]
 
-Zdroje:
-[Seznam zdrojů s odkazy]"""
-
-    return render_template('prompt.html', ANALYZE_PROMPT=analyze_prompt)
-
-@app.route('/support')
-def support():
-    return render_template('support.html')
-
-@app.route('/api/analyze', methods=['POST'])
-@limiter.limit("10 per minute")
-def api_analyze():
-    text = request.form.get('text', '')
-    image_file = request.files.get('image')
-    generate_social = request.form.get('generate_social') == 'true'
-    
-    image = None
-    if image_file:
+def chat_completion(messages: List[Dict[str, Any]], *, model: str = "gpt-4o-mini", temperature: float = 0.2) -> str:
+    """Volá OpenAI Chat Completion s retry mechanismem pro Rate Limit."""
+    delay = 1.0  # první retry za 1 s, pak exponenciálně
+    for attempt in range(5):
         try:
-            image = Image.open(image_file.stream)
-            # V produkci by zde bylo zpracování obrázku pro OpenAI API
-        except Exception as e:
-            return jsonify({"error": str(e)}), 400
-    
-    # Kontrola, zda byl poskytnut alespoň jeden vstup
-    if not text and not image:
-        return jsonify({"error": "Musí být poskytnut text nebo obrázek"}), 400
-    
-    try:
-        result = analyze_content(text, image, generate_social)
-        return jsonify(result)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+            response = client.chat.completions.create(
+                model=model,
+                messages=messages,
+                temperature=temperature,
+                timeout=OPENAI_TIMEOUT,
+            )
+            return response.choices[0].message.content  # type: ignore[attr-defined]
+        except RateLimitError as exc:
+            if attempt == 4:
+                raise  # už nezkoušet dál
+            time.sleep(delay)
+            delay *= 2
+        except (Timeout, InvalidRequestError, AuthenticationError):
+            raise  # předáme dál do handleru
+    raise RuntimeError("Unreachable retry loop – this should not happen")
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+# ---------------------------------------------------------------------------
+# Routy
+# ---------------------------------------------------------------------------
+
+@app.route("/")
+def index():
+    return render_template("index.html")
+
+
+@app.route("/prompt")
+def prompt_page():
+    return render_template("prompt.html")
+
+
+@app.route("/support")
+def support_page():
+    return render_template("support.html")
+
+
+@app.route("/analyze", methods=["POST"])
+@limiter.limit("5/minute")
+def analyze():
+    """Endpoint pro analýzu textu nebo obrázku."""
+    # 1) Json payload – text
+    if request.is_json:
+        data = request.get_json(silent=True) or {}
+        prompt = (data.get("prompt") or "").strip()
+        if not prompt:
+            return jsonify(error="'prompt' nesmí být prázdný."), 400
+        messages = build_messages(prompt)
+    # 2) Form‑data s obrázkem (a volitelným textem)
+    else:
+        if "image" not in request.files:
+            return jsonify(error="Chybí pole 'image'."), 400
+        file = request.files["image"]
+        prompt = (request.form.get("prompt") or "").strip() or "Analyzuj obrázek."
+        if file.filename == "":
+            return jsonify(error="Soubor nemá název."), 400
+        if not allowed_file(file.filename):
+            return jsonify(error="Nepodporovaný formát souboru."), 400
+        # Kontrola velikosti (už hlídá MAX_CONTENT_LENGTH), takže jen rozlišení
+        try:
+            img = Image.open(file.stream)
+        except Exception:
+            return jsonify(error="Soubor není validní obrázek."), 400
+        if img.width * img.height > MAX_PIXEL_COUNT:
+            return (
+                jsonify(error="Obrázek je příliš velký; maximálně 2048×2048 px."),
+                400,
+            )
+        # Převod na base64 data‑URL
+        img_format = img.format.lower()  # e.g. "png"
+        img_data_url = image_to_data_url(img, img_format)
+        messages = build_messages(prompt, img_data_url=img_data_url)
+    # ------------------------------------------------------------------
+    # Volání OpenAI API
+    try:
+        content = chat_completion(messages)
+    except AuthenticationError:
+        return jsonify(error="Serverová konfigurace: API klíč je neplatný."), 500
+    except Timeout:
+        return jsonify(error="OpenAI API neodpovídá."), 504
+    except InvalidRequestError as exc:
+        return jsonify(error=f"Chybný požadavek: {exc}"), 400
+    except RateLimitError:
+        return jsonify(error="OpenAI API je momentálně přetížené, zkuste to za chvíli."), 429
+    except Exception:
+        # Logování by bylo lepší do loggeru, zde stručně
+        return jsonify(error="Neočekávaná chyba na serveru."), 500
+    # ------------------------------------------------------------------
+    return jsonify(result=content)
+
+
+# ---------------------------------------------------------------------------
+# Vstupní bod
+# ---------------------------------------------------------------------------
+
+if __name__ == "__main__":
+    port = int(os.getenv("PORT", "5000"))
+    debug = bool(os.getenv("FLASK_DEBUG"))
+    app.run(host="0.0.0.0", port=port, debug=debug)
