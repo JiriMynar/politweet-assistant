@@ -1,5 +1,5 @@
-/* === DOM ============================================================= */
-const imageInput  = document.getElementById("imageInput");
+// === DOM ===
+const imageInput  = document.getElementById("image");
 const dropZone    = document.getElementById("dropZone");
 const submitBtn   = document.getElementById("submitBtn");
 const loader      = document.getElementById("loader");
@@ -10,7 +10,7 @@ const sourcesList = document.getElementById("sourcesList");
 const previewImg  = document.getElementById("preview");
 const dzOverlay   = document.querySelector(".dz-content");
 
-/* === 1) PŘÍJEM SOUBORU =============================================== */
+// === 1) PŘÍJEM SOUBORU ===
 function handleFile(file){
   if(!file || !(file.type||"").startsWith("image/")) return;
   const dt = new DataTransfer(); dt.items.add(file); imageInput.files = dt.files;
@@ -32,7 +32,7 @@ dropZone.addEventListener("drop",e=>{e.preventDefault();dropZone.classList.remov
 dropZone.addEventListener("click",()=>imageInput.click());
 imageInput.addEventListener("change",()=>handleFile(imageInput.files[0]));
 
-/* === 2) Ctrl + V ===================================================== */
+// === 2) Ctrl + V ===
 document.addEventListener("paste", e=>{
   const items=[...(e.clipboardData?.items||[])];
   const fileItem=items.find(it=>it.kind==="file"&&it.type.startsWith("image/"));
@@ -40,17 +40,19 @@ document.addEventListener("paste", e=>{
   const files=e.clipboardData?.files||[]; if(files.length){ handleFile(files[0]); e.preventDefault(); }
 });
 
-/* === 3) ANALÝZA ====================================================== */
+// === 3) ANALÝZA ===
 submitBtn.addEventListener("click", analyse);
 async function analyse(){
-  if(!imageInput.files.length) return;
+  if(!imageInput.files.length && !document.getElementById("text").value.trim()) return;
 
   loader.classList.remove("hidden");
   resultBox.classList.add("hidden");
   submitBtn.disabled = true;
 
   try{
-    const fd=new FormData(); fd.append("image", imageInput.files[0]);
+    const fd = new FormData();
+    if (imageInput.files.length) fd.append("image", imageInput.files[0]);
+    fd.append("text", document.getElementById("text").value.trim());
     const res  = await fetch("/analyze",{method:"POST",body:fd});
     const data = await res.json();
     if(!res.ok) throw new Error(data.error||"Chyba serveru");
@@ -67,16 +69,16 @@ async function analyse(){
   }
 }
 
-/* === 4) PARSE PLAIN-TEXT (Markdown) ================================== */
+// === 4) PARSE PLAIN-TEXT (Markdown) ===
 function parsePlain(txt){
-  const clean = txt.replace(/\r/g,"");              // sjednotí \n
+  const clean = txt.replace(/\r/g,"");              
   const firstDot = clean.indexOf(".");
   const claim = firstDot>0 ? clean.slice(0,firstDot+1).trim() : "—";
 
   let verdict="Unknown";
-  if(/\bFalse\b/i.test(clean))          verdict="False";
-  else if(/\bTrue\b/i.test(clean) && !/\bFalse\b/i.test(clean)) verdict="True";
-  else if(/Partially\s+True/i.test(clean))          verdict="Partial";
+  if(/\bLež\b/i.test(clean)) verdict="False";
+  else if(/\bPravda\b/i.test(clean) && !/\bLež\b/i.test(clean)) verdict="True";
+  else if(/Zavádějící|spíše/i.test(clean)) verdict="Partial";
 
   const linkRe=/\[(.*?)\]\((https?:\/\/[^\s)]+)\)/g;
   const sources=[]; let m;
@@ -86,7 +88,7 @@ function parsePlain(txt){
   return {claim,verdict,explanation:clean,sources};
 }
 
-/* === 5) VÝSLEDEK + POMOCNÉ ========================================== */
+// === 5) VÝSLEDEK + POMOCNÉ ===
 function renderResult(data){
   analysisTbl.innerHTML=""; sourcesList.innerHTML="";
 
