@@ -2,16 +2,24 @@
 <html lang="cs">
 <head>
     <meta charset="UTF-8">
-    <title>Politweet Asistent</title>
+    <title>Factchecker Asistent</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <h1>Politweet Asistent</h1>
+    <h1>Factchecker Asistent</h1>
 
-    <form action="" method="post" enctype="multipart/form-data">
-        <input type="file" name="image" accept="image/*" required>
+    <form id="analyzeForm" action="/analyze" method="post" enctype="multipart/form-data">
+        <label for="image">Obrázek k analýze:</label>
+        <input type="file" id="image" name="image" accept="image/*"><br>
+        <p>nebo</p>
+        <label for="text">Text k analýze:</label>
+        <textarea id="text" name="text" rows="4" cols="40" placeholder="Vložte text k ověření..."></textarea><br>
         <button type="submit">Analyzovat</button>
     </form>
+
+    {% if error %}
+        <div class="error">{{ error }}</div>
+    {% endif %}
 
     {% if analysis %}
         <h2>Výsledek</h2>
