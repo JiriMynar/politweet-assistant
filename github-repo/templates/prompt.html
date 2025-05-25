@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}Prompt Projektu | Factchecker Asistent{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <div class="bg-white rounded-xl shadow-lg p-6 md:p-8">
+        <h1 class="text-2xl md:text-3xl font-semibold text-gray-800 mb-6">Prompt Projektu</h1>
+        
+        <div class="space-y-6">
+            <div>
+                <h2 class="text-xl font-medium text-gray-700 mb-3">Jak funguje náš fact-checker?</h2>
+                <p class="text-gray-600 mb-4">
+                    Factchecker Asistent využívá pokročilý model GPT-4o od společnosti OpenAI, který je instruován pomocí 
+                    specializovaného promptu. Tento prompt zajišťuje, že model analyzuje předložená tvrzení nebo obrázky 
+                    systematicky, objektivně a s důrazem na faktickou přesnost.
+                </p>
+            </div>
+
+            <div>
+                <h2 class="text-xl font-medium text-gray-700 mb-3">Náš prompt</h2>
+                <p class="text-gray-600 mb-4">
+                    Níže je přesné znění promptu, který používáme pro analýzu. Tento prompt byl pečlivě navržen tak, 
+                    aby zajistil konzistentní, objektivní a důkladné ověřování faktů.
+                </p>
+                
+                <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 font-mono text-sm whitespace-pre-wrap overflow-x-auto">{{ ANALYZE_PROMPT }}</div>
+            </div>
+
+            <div>
+                <h2 class="text-xl font-medium text-gray-700 mb-3">Klíčové prvky našeho promptu</h2>
+                
+                <div class="space-y-4">
+                    <div class="bg-blue-50 border-l-4 border-blue-500 p-4">
+                        <h3 class="font-medium text-blue-800">Pětistupňová škála hodnocení</h3>
+                        <p class="text-blue-700 mt-1">
+                            Používáme jasně definovanou škálu od "1. Pravda" po "5. Lež", která umožňuje nuancované 
+                            hodnocení tvrzení a zohledňuje různé stupně pravdivosti či nepravdivosti.
+                        </p>
+                    </div>
+                    
+                    <div class="bg-blue-50 border-l-4 border-blue-500 p-4">
+                        <h3 class="font-medium text-blue-800">Důkladné vysvětlení</h3>
+                        <p class="text-blue-700 mt-1">
+                            Vyžadujeme podrobné vysvětlení na úrovni vysokoškoláka, které zahrnuje kontext, 
+                            souvislosti a relevantní fakta, aby uživatel plně porozuměl hodnocení.
+                        </p>
+                    </div>
+                    
+                    <div class="bg-blue-50 border-l-4 border-blue-500 p-4">
+                        <h3 class="font-medium text-blue-800">Ověřitelné zdroje</h3>
+                        <p class="text-blue-700 mt-1">
+                            Každá analýza musí obsahovat konkrétní odkazy na ověřitelné zdroje, jako jsou 
+                            články, studie nebo oficiální statistiky, které podporují uvedené hodnocení.
+                        </p>
+                    </div>
+                    
+                    <div class="bg-blue-50 border-l-4 border-blue-500 p-4">
+                        <h3 class="font-medium text-blue-800">Strukturovaná odpověď</h3>
+                        <p class="text-blue-700 mt-1">
+                            Vyžadujeme jasnou strukturu odpovědi s označením statusu, podrobným vysvětlením 
+                            a seznamem zdrojů, což zajišťuje konzistentní a přehledný formát výsledků.
+                        </p>
+                    </div>
+                    
+                    <div class="bg-blue-50 border-l-4 border-blue-500 p-4">
+                        <h3 class="font-medium text-blue-800">Uvedení na pravou míru</h3>
+                        <p class="text-blue-700 mt-1">
+                            U částečně pravdivých tvrzení požadujeme uvedení správné formulace, což pomáhá 
+                            uživatelům lépe porozumět, kde přesně je problém v původním tvrzení.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <h2 class="text-xl font-medium text-gray-700 mb-3">Omezení a etika</h2>
+                <p class="text-gray-600 mb-4">
+                    Přestože se snažíme o maximální přesnost a objektivitu, je důležité mít na paměti, že žádný 
+                    automatizovaný systém není neomylný. Naše aplikace by měla být používána jako pomocný nástroj, 
+                    nikoli jako jediný zdroj pravdy. Vždy doporučujeme kritické myšlení a ověřování informací z více zdrojů.
+                </p>
+                <p class="text-gray-600">
+                    Factchecker Asistent je navržen s důrazem na etické principy fact-checkingu, včetně transparentnosti, 
+                    nestrannosti a odpovědnosti. Neustále pracujeme na zlepšování našeho promptu a celého systému na základě 
+                    zpětné vazby a nových poznatků v oblasti ověřování faktů.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
