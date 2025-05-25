@@ -5,11 +5,10 @@ from PIL import Image
 import io
 import base64
 
-# Nastavení klíče OpenAI (ideálně přes proměnnou prostředí)
+# Nastavení OpenAI API klíče
 openai.api_key = os.environ.get("OPENAI_API_KEY")
 
 st.set_page_config(page_title="Univerzální Factchecker", page_icon="✅", layout="centered")
-
 st.title("🕵️‍♂️ Univerzální Factchecker")
 st.write(
     "Nahraj obrázek **nebo** zadej textové tvrzení k ověření. "
