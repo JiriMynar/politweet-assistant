@@ -5,7 +5,10 @@ from PIL import Image
 import io
 import base64
 
-# Nastavení OpenAI API klíče
+# Kontrola API klíče
+if not os.environ.get("OPENAI_API_KEY"):
+    st.error("Chybí proměnná prostředí OPENAI_API_KEY. Zadejte svůj OpenAI API klíč.")
+    st.stop()
 openai.api_key = os.environ.get("OPENAI_API_KEY")
 
 st.set_page_config(page_title="Univerzální Factchecker", page_icon="✅", layout="centered")
@@ -35,7 +38,7 @@ ANALYZE_PROMPT = (
 
 def get_factcheck_result(image_file=None, text=None):
     try:
-        if image_file:
+        if image_file and not text:
             img = Image.open(image_file)
             buf = io.BytesIO()
             img.save(buf, format="PNG")
@@ -61,7 +64,7 @@ def get_factcheck_result(image_file=None, text=None):
                     }
                 ],
             )
-        elif text:
+        elif text and not image_file:
             user_prompt = ANALYZE_PROMPT + f"\nTvrzení: {text}"
             response = openai.chat.completions.create(
                 model="gpt-4o-mini",
@@ -70,7 +73,7 @@ def get_factcheck_result(image_file=None, text=None):
                 ],
             )
         else:
-            return None, "Nevyplnil(a) jste obrázek ani text."
+            return None, "Vyplňte buď obrázek, nebo text, ne obojí zároveň."
         answer = response.choices[0].message.content
         return answer, None
     except Exception as e:
@@ -78,15 +81,16 @@ def get_factcheck_result(image_file=None, text=None):
 
 def render_status(status_line):
     status_line = status_line.strip().lower()
-    if "pravda" in status_line and "spíše" not in status_line:
-        st.success("🟢 " + status_line.capitalize())
-    elif "spíše pravda" in status_line:
+    # Nejprve kontrolujeme "spíše pravda", pak až "pravda"
+    if status_line.startswith("spíše pravda"):
         st.info("🟢 " + status_line.capitalize())
-    elif "zavádějící" in status_line:
+    elif status_line.startswith("pravda"):
+        st.success("🟢 " + status_line.capitalize())
+    elif status_line.startswith("zavádějící"):
         st.warning("🟠 " + status_line.capitalize())
-    elif "spíše lež" in status_line:
-        st.error("🔴 " + status_line.capitalize())
-    elif "lež" in status_line:
+    elif status_line.startswith("spíše lež"):
+        st.error("🟠 " + status_line.capitalize())
+    elif status_line.startswith("lež"):
         st.error("🔴 " + status_line.capitalize())
     else:
         st.write(status_line)
@@ -109,8 +113,8 @@ if submitted:
         if error:
             st.error(error)
         else:
-            # Rozparsování odpovědi
-            lines = result.split("\n")
+            # Robustnější parsování odpovědi
+            lines = [l for l in result.split("\n") if l.strip()]
             status_line = next((l for l in lines if l.lower().startswith("status:")), None)
             vysvetleni_idx = next((i for i,l in enumerate(lines) if l.lower().startswith("vysvětlení:")), None)
             zdroje_idx = next((i for i,l in enumerate(lines) if l.lower().startswith("zdroje:")), None)
