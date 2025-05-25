@@ -3,8 +3,8 @@ Factchecker Assistant – hlavní spouštěcí skript
 ----------------------------------------------
 Zjednodušená, ale stále robustní verze pro snadné nasazení.
 
-• Flask backend + Flask-Limiter (rate-limit)
-• Oficiální klient `openai.OpenAI` (>= 1.3)
+• Flask backend + Flask‑Limiter (rate‑limit)
+• Oficiální klient `openai.OpenAI` (>= 1.3)
 • Kontrola proměnné **OPENAI_API_KEY** už při startu
 • Validace velikosti, rozlišení a typu obrázku
 • Přehledné JSON chyby + jednoduchý retry při přetížení API
@@ -38,8 +38,8 @@ from openai._exceptions import (
 # Konfigurace
 # ---------------------------------------------------------------------------
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "webp"}
-MAX_PIXEL_COUNT = 2048 * 2048          # max počet pixelů  (≈ 4 Mpx)
-MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024 # 20 MB – tvrdý limit OpenAI
+MAX_PIXEL_COUNT = 2048 * 2048          # max počet pixelů  (≈ 4 Mpx)
+MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024 # 20 MB – tvrdý limit OpenAI
 OPENAI_TIMEOUT = 30                    # s
 
 api_key = os.getenv("OPENAI_API_KEY")
@@ -62,7 +62,7 @@ def allowed_file(filename: str) -> bool:
 
 
 def image_to_data_url(image: Image.Image, fmt: str) -> str:
-    """Převede PIL obrázek na base64 data-URL (nutné pro Vision model)."""
+    """Převede PIL obrázek na base64 data‑URL (nutné pro Vision model)."""
     buf = io.BytesIO()
     image.save(buf, format=fmt.upper())
     encoded = base64.b64encode(buf.getvalue()).decode()
@@ -82,7 +82,7 @@ def build_messages(prompt: str, img_data_url: str | None = None) -> List[Dict[st
 
 
 def chat_completion(messages: List[Dict[str, Any]], model: str = "gpt-4o-mini", temperature: float = 0.2) -> str:
-    """Zavolá OpenAI Chat-Completion se 4 retenzními pokusy při 429."""
+    """Zavolá OpenAI Chat‑Completion se 4 retenzními pokusy při 429."""
     delay = 1.0
     for attempt in range(5):
         try:
@@ -125,26 +125,36 @@ def support_view():
 @app.route("/analyze", methods=["POST"])
 @limiter.limit("5/minute")
 def analyze():
-    """Zpracuje buď textový prompt (JSON), nebo obrázek (form-data)."""
+    """Zpracuje buď textový prompt (JSON), nebo obrázek (form‑data)."""
     if request.is_json:
         data = request.get_json(silent=True) or {}
         prompt = (data.get("prompt") or "").strip()
         if not prompt:
             return jsonify(error="'prompt' musí být vyplněn."), 400
         messages = build_messages(prompt)
-    else:  # form-data
+    else:  # form‑data
         if "image" not in request.files:
             return jsonify(error="Chybí pole 'image'."), 400
         file = request.files["image"]
         prompt = (request.form.get("prompt") or "Analyzuj obrázek.").strip()
-        if not allowed_file(file.filename):
+        # pokud uživatel nahrál obrázek bez názvu (např. drag‑and‑drop z webu),
+        # soubor může mít prázdný filename – v tom případě se pokusíme
+        # odvodit koncovku z MIME typu.
+        file_ext = ""
+        if file.filename and "." in file.filename:
+            file_ext = file.filename.rsplit(".", 1)[1].lower()
+        elif file.mimetype and file.mimetype.startswith("image/"):
+            # image/png -> png
+            file_ext = file.mimetype.split("/", 1)[1].lower()
+
+        if file_ext not in ALLOWED_EXTENSIONS:
             return jsonify(error="Nepodporovaný typ souboru."), 400
         try:
             img = Image.open(file.stream)
         except Exception:
             return jsonify(error="Soubor není validní obrázek."), 400
         if img.width * img.height > MAX_PIXEL_COUNT:
-            return jsonify(error="Obrázek přesahuje 2048×2048 px."), 400
+            return jsonify(error="Obrázek přesahuje 2048×2048 px."), 400
         img_data_url = image_to_data_url(img, img.format.lower())
         messages = build_messages(prompt, img_data_url)
 
@@ -171,4 +181,3 @@ def analyze():
 if __name__ == "__main__":
     port = int(os.getenv("PORT", "5000"))
     app.run(host="0.0.0.0", port=port)
-
