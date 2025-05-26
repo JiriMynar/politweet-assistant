@@ -150,9 +150,40 @@ Zdroje:
         if image:
             try:
                 logger.info("Zpracování obrázku")
-                # Převod obrázku na base64
+                
+                # Omezení velikosti obrázku
+                max_size = (1024, 1024)  # Maximální rozměry
+                if image.width > max_size[0] or image.height > max_size[1]:
+                    image.thumbnail(max_size, Image.LANCZOS)
+                    logger.info(f"Obrázek zmenšen na {image.width}x{image.height}")
+                
+                # Konverze do RGB, pokud je to potřeba (např. pro RGBA nebo CMYK obrázky)
+                if image.mode != 'RGB':
+                    image = image.convert('RGB')
+                    logger.info(f"Obrázek převeden do RGB z {image.mode}")
+                
+                # Převod obrázku na base64 s optimalizovanou kvalitou
                 buffered = BytesIO()
-                image.save(buffered, format="JPEG")
+                image.save(buffered, format="JPEG", quality=85, optimize=True)
+                img_size = buffered.tell()
+                logger.info(f"Velikost obrázku po kompresi: {img_size} bajtů")
+                
+                # Pokud je obrázek stále příliš velký, snížit kvalitu
+                if img_size > 1000000:  # 1MB limit
+                    quality = 70
+                    buffered = BytesIO()
+                    image.save(buffered, format="JPEG", quality=quality, optimize=True)
+                    img_size = buffered.tell()
+                    logger.info(f"Obrázek překomprimován s kvalitou {quality}, nová velikost: {img_size} bajtů")
+                    
+                    # Pokud je stále příliš velký, zkusit ještě nižší kvalitu
+                    if img_size > 1000000:
+                        quality = 50
+                        buffered = BytesIO()
+                        image.save(buffered, format="JPEG", quality=quality, optimize=True)
+                        logger.info(f"Obrázek překomprimován s kvalitou {quality}")
+                
+                buffered.seek(0)
                 img_str = base64.b64encode(buffered.getvalue()).decode('utf-8')
                 
                 user_content.append({
@@ -385,3 +416,4 @@ def api_analyze():
 if __name__ == "__main__":
     logger.info("Spouštění aplikace")
     app.run(debug=True, host='0.0.0.0')
+
