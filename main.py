@@ -206,7 +206,7 @@ Zdroje:
                 model="gpt-4o",
                 messages=messages,
                 temperature=0.2,
-                max_tokens=1000
+                max_tokens=5000
             )
             logger.info("Úspěšné volání OpenAI API")
         except openai.RateLimitError as e:
