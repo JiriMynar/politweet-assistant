@@ -11,8 +11,13 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/responsive_improvements.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/visual_feedback.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/accessibility_improvements.css') }}">
+    
 
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.12.0/dist/cdn.min.js" defer></script>
+    <script src="{{ url_for('static', filename='js/image_upload_improvements.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/mobile_touch_handlers.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/visual_feedback.js') }}"></script>
+
     {% block head %}{% endblock %}
 </head>
 <body class="bg-gradient-to-br from-blue-50 to-blue-100 min-h-screen flex flex-col">
