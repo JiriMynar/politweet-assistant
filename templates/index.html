@@ -796,6 +796,7 @@
             isAnalyzing: false,
             isGeneratingSocial: false,
             generateSocial: false,
+                analysisDone: false,
             analysisResult: null,
             socialResponse: null,
             selectedTone: 'factual',
@@ -909,10 +910,12 @@
                     alert('Nastala chyba při analýze: ' + error.message);
                 } finally {
                     this.isAnalyzing = false;
+                            this.analysisDone = true;
                 }
             },
             
-            // Extrakce klíčových bodů z analýzy
+            // Extrakce klíčových 
+            bodů z analýzy
             extractKeyPoints() {
                 if (!this.analysisResult) return;
                 
