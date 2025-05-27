@@ -31,54 +31,38 @@
   </ul>
 </nav>
 
-<!-- Přístupná drop zóna pro nahrávání obrázků -->
-<div id="dropZone" 
-     role="button" 
-     tabindex="0" 
-     aria-label="Oblast pro nahrání obrázku. Přetáhněte sem obrázek nebo klikněte pro výběr souboru."
-     aria-describedby="uploadInfoMessage"
-     aria-dropeffect="copy"
-     onkeydown="if(event.key === 'Enter' || event.key === ' ') { document.getElementById('imageInput').click(); event.preventDefault(); }">
-  
-  <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-  
-  <p>Přetáhni obrázek sem nebo klikni pro nahrání</p>
-  <p id="uploadInfoMessage" class="text-sm text-gray-600 mt-1">Podporované formáty: JPG, PNG, GIF, WebP. Maximální velikost: 5MB.</p>
+<!-- Kombinované vstupní pole pro text i obrázky -->
+<div id="inputContainer"
+     class="border-2 border-dashed border-gray-300 rounded-lg p-4 transition-colors duration-300"
+     :class="{'border-blue-500 bg-blue-50': isDragging}"
+     role="textbox"
+     tabindex="0"
+     aria-label="Vložte text nebo obrázek"
+     @dragover.prevent="isDragging = true"
+     @dragleave.prevent="isDragging = false"
+     @drop.prevent="handleDrop"
+     @paste="handlePaste">
+
+    <textarea id="textInput"
+              name="textInput"
+              rows="6"
+              x-model="textInput"
+              class="w-full h-48 border-none focus:ring-0 resize-none bg-transparent placeholder-gray-500"
+              placeholder="Sem vložte text nebo přetáhněte/zkopírujte obrázek..."
+              aria-describedby="textInputHelp"></textarea>
+
+    <!-- Náhled obrázku -->
+    <template x-if="hasImage">
+        <div class="relative mt-4">
+            <img :src="imagePreview" class="max-h-64 mx-auto" alt="Náhled obrázku">
+            <button @click.stop="clearImage" class="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center" aria-label="Odebrat obrázek">✕</button>
+        </div>
+    </template>
 </div>
 
-<input type="file" id="imageInput" class="hidden" accept="image/*" aria-label="Vybrat obrázek k nahrání">
-
-<!-- Přístupný progress bar -->
-<div id="uploadProgressContainer" class="hidden" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Průběh nahrávání">
-  <div id="uploadProgressBar" style="width: 0%"></div>
-</div>
-
-<!-- Přístupná chybová zpráva -->
-<p id="uploadErrorMessage" class="hidden" role="alert" aria-live="assertive"></p>
-
-<!-- Přístupný náhled obrázku -->
-<div class="relative mt-4">
-  <img id="imagePreview" class="hidden" alt="Náhled nahraného obrázku" aria-describedby="imageActions">
-</div>
-
-<!-- Přístupná tlačítka pro manipulaci s obrázkem -->
-<div id="imageActions" class="flex space-x-2 mt-2">
-  <button id="cropImageButton" class="hidden" aria-label="Oříznout obrázek">Oříznout obrázek</button>
-  <button id="clearImageButton" class="hidden" aria-label="Odstranit obrázek">Odstranit obrázek</button>
-</div>
-
-<!-- Přístupný textový vstup -->
-<div>
-  <label for="textInput" class="block text-sm font-medium text-gray-700 mb-1">Text k ověření</label>
-  <textarea 
-    id="textInput" 
-    name="textInput" 
-    rows="4" 
-    class="w-full border border-gray-300 rounded-lg p-4 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
-    placeholder="Vložte text k ověření nebo doplňte kontext k obrázku..."
-    aria-describedby="textInputHelp"></textarea>
-  <p id="textInputHelp" class="text-sm text-gray-600 mt-1">Vložte text, který chcete ověřit, nebo doplňte kontext k nahranému obrázku.</p>
-</div>
+<!-- Skrytý vstup pro výběr souboru (pro případné kliknutí) -->
+<input type="file" id="imageInput" class="hidden" accept="image/*" @change="handleImageSelect" aria-label="Vybrat obrázek k nahrání">
+<p id="textInputHelp" class="mt-1 text-sm text-gray-600">Sem vložte text, který chcete ověřit, nebo doplňte kontext k obrázku.</p>
 
 <!-- Přístupné tlačítko pro odeslání -->
 <button 
