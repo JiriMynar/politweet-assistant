@@ -1,0 +1,274 @@
+/* 
+ * Responzivní design a mobilní optimalizace pro politweet-assistant
+ * 
+ * Tento soubor obsahuje CSS styly pro zlepšení responzivity a mobilní optimalizace:
+ * - Media queries pro různé velikosti obrazovky
+ * - Optimalizace pro dotykové ovládání
+ * - Vylepšení čitelnosti a přístupnosti na mobilních zařízeních
+ * 
+ * Jak implementovat:
+ * 1. Přidejte tento soubor do adresáře static/css/
+ * 2. Přidejte odkaz na tento soubor v base.html
+ */
+
+/* Základní responzivní nastavení */
+:root {
+  --container-padding-mobile: 1rem;
+  --container-padding-tablet: 1.5rem;
+  --container-padding-desktop: 2rem;
+  --touch-target-size: 44px;
+}
+
+/* Kontejner s adaptivním paddingem */
+.responsive-container {
+  width: 100%;
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: var(--container-padding-mobile);
+  padding-right: var(--container-padding-mobile);
+}
+
+/* Responzivní typografie */
+html {
+  font-size: 16px;
+}
+
+@media (max-width: 640px) {
+  html {
+    font-size: 14px;
+  }
+  
+  h1 {
+    font-size: 1.75rem;
+  }
+  
+  h2 {
+    font-size: 1.5rem;
+  }
+  
+  h3 {
+    font-size: 1.25rem;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 1024px) {
+  .responsive-container {
+    padding-left: var(--container-padding-tablet);
+    padding-right: var(--container-padding-tablet);
+  }
+}
+
+@media (min-width: 1025px) {
+  .responsive-container {
+    padding-left: var(--container-padding-desktop);
+    padding-right: var(--container-padding-desktop);
+  }
+}
+
+/* Optimalizace pro dotykové ovládání */
+@media (max-width: 768px) {
+  /* Zvětšení dotykových cílů pro lepší použitelnost */
+  button, 
+  .btn,
+  input[type="submit"],
+  input[type="button"],
+  input[type="reset"],
+  a.button,
+  .touch-target {
+    min-height: var(--touch-target-size);
+    min-width: var(--touch-target-size);
+    padding: 0.75rem 1rem;
+    touch-action: manipulation;
+  }
+  
+  /* Zvětšení mezer mezi interaktivními prvky */
+  .touch-friendly-spacing > * + * {
+    margin-top: 1rem;
+  }
+  
+  /* Zvětšení formulářových prvků */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="search"],
+  input[type="tel"],
+  input[type="url"],
+  textarea,
+  select {
+    font-size: 16px; /* Zabraňuje iOS zoomování při fokusu */
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+  }
+  
+  /* Vylepšení čitelnosti */
+  p, li, td, th, label, input, textarea, select, button {
+    font-size: 1rem;
+    line-height: 1.5;
+  }
+}
+
+/* Responzivní layout pro hlavní navigaci */
+@media (max-width: 768px) {
+  header nav {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  header nav ul {
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  header nav ul li {
+    width: 100%;
+    text-align: center;
+    padding: 0.75rem 0;
+  }
+}
+
+/* Responzivní layout pro hlavní obsah */
+@media (max-width: 768px) {
+  .main-content {
+    flex-direction: column;
+  }
+  
+  .sidebar {
+    width: 100%;
+    margin-bottom: 1.5rem;
+  }
+  
+  .content-area {
+    width: 100%;
+  }
+}
+
+/* Responzivní tabulky */
+@media (max-width: 768px) {
+  .responsive-table {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Optimalizace pro orientaci zařízení */
+@media (orientation: portrait) {
+  .portrait-only {
+    display: block;
+  }
+  
+  .landscape-only {
+    display: none;
+  }
+}
+
+@media (orientation: landscape) {
+  .portrait-only {
+    display: none;
+  }
+  
+  .landscape-only {
+    display: block;
+  }
+}
+
+/* Optimalizace pro výsledky analýzy na mobilních zařízeních */
+@media (max-width: 640px) {
+  .result-card {
+    padding: 1rem;
+    margin-bottom: 1rem;
+  }
+  
+  .result-card h3 {
+    font-size: 1.25rem;
+    margin-bottom: 0.5rem;
+  }
+  
+  .badge {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+  }
+  
+  .result-details {
+    font-size: 0.875rem;
+  }
+}
+
+/* Optimalizace pro drop zónu na mobilních zařízeních */
+@media (max-width: 640px) {
+  #dropZone {
+    padding: 1.5rem 1rem;
+  }
+  
+  #dropZone p {
+    font-size: 0.875rem;
+  }
+  
+  #dropZone svg {
+    width: 2rem;
+    height: 2rem;
+  }
+}
+
+/* Utility třídy pro responzivní design */
+.hide-on-mobile {
+  display: block;
+}
+
+.show-on-mobile {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .hide-on-mobile {
+    display: none;
+  }
+  
+  .show-on-mobile {
+    display: block;
+  }
+}
+
+/* Optimalizace pro vysokou hustotu pixelů (Retina displeje) */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .retina-optimized {
+    /* Specifické styly pro displeje s vysokou hustotou pixelů */
+  }
+}
+
+/* Podpora pro tmavý režim */
+@media (prefers-color-scheme: dark) {
+  .dark-mode-support {
+    /* Styly pro tmavý režim, pokud je systémově preferován */
+  }
+}
+
+/* Optimalizace pro tisk */
+@media print {
+  .no-print {
+    display: none;
+  }
+  
+  body {
+    font-size: 12pt;
+    line-height: 1.5;
+    color: #000;
+    background: #fff;
+  }
+  
+  a {
+    text-decoration: underline;
+    color: #000;
+  }
+  
+  .print-break-before {
+    page-break-before: always;
+  }
+  
+  .print-break-after {
+    page-break-after: always;
+  }
+}

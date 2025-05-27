@@ -1,0 +1,229 @@
+/* ===== ZÁKLAD ===== */
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: 'Inter', sans-serif;
+    color: #1f2937;
+    background: linear-gradient(135deg, #eaf0ff 0%, #f4f7ff 100%);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'Poppins', sans-serif;
+}
+
+/* ===== NAVIGACE ===== */
+header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+/* ===== HERO SEKCE ===== */
+.hero-image {
+    transition: transform 0.3s ease;
+}
+
+.hero-image:hover {
+    transform: scale(1.03);
+}
+
+/* ===== DROP ZÓNA + NÁHLED ===== */
+#dropZone {
+    position: relative;
+    border: 2px dashed #d1d5db;
+    border-radius: 14px;
+    padding: 2.5rem 1.5rem;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color .2s, background .2s, padding .2s;
+    min-height: 140px;
+}
+
+#dropZone.dragover {
+    background: #eef2ff;
+    border-color: #6366f1;
+}
+
+#dropZone:focus-visible {
+    outline: 2px solid #6366f1;
+}
+
+#dropZone.has-image {
+    padding: 0;
+}
+
+.preview {
+    max-width: 100%;
+    max-height: 300px;
+    border-radius: inherit;
+}
+
+/* ===== TLAČÍTKA ===== */
+button {
+    transition: all 0.2s ease;
+}
+
+button:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+button:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+/* ===== VÝSLEDEK ANALÝZY ===== */
+.result {
+    margin-top: 1.5rem;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 1rem;
+}
+
+/* ===== ANIMACE ===== */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.fade-in {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+/* ===== RESPONZIVITA ===== */
+@media (max-width: 640px) {
+    #dropZone {
+        padding: 1.5rem 1rem;
+    }
+    
+    .grid-cols-3 {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ===== DARK MODE ===== */
+@media (prefers-color-scheme: dark) {
+    .dark-mode-support {
+        background-color: #1f2937;
+        color: #f3f4f6;
+    }
+}
+
+/* ===== PŘÍSTUPNOST ===== */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+}
+
+/* ===== ALPINE.JS CLOAK ===== */
+[x-cloak] {
+    display: none !important;
+}
+
+/* ===== CUSTOM SCROLLBAR ===== */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #a1a1a1;
+}
+
+/* ===== NOTIFICATION ===== */
+.notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 12px 20px;
+    background-color: #4ade80;
+    color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    transform: translateY(-100px);
+    opacity: 0;
+    transition: all 0.3s ease;
+}
+
+.notification.show {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+/* ===== CUSTOM FOCUS STYLES ===== */
+:focus {
+    outline: 2px solid #4f46e5;
+    outline-offset: 2px;
+}
+
+button:focus {
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.5);
+}
+
+/* ===== BADGES ===== */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    border-radius: 9999px;
+    font-weight: 600;
+    font-size: 0.875rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* ===== HOVER EFEKTY ===== */
+.hover-lift {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hover-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+/* ===== FOOTER ===== */
+footer a {
+    transition: color 0.2s ease;
+}
+
+/* ===== PRINT STYLES ===== */
+@media print {
+    body {
+        background: white;
+    }
+    
+    .no-print {
+        display: none;
+    }
+    
+    .container {
+        width: 100%;
+        max-width: 100%;
+    }
+}
