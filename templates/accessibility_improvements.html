@@ -1,0 +1,282 @@
+<!-- 
+ * Vylepšení přístupnosti pro politweet-assistant
+ * 
+ * Tento soubor obsahuje HTML ukázky s ARIA atributy pro zlepšení přístupnosti:
+ * - ARIA atributy pro lepší podporu čteček obrazovky
+ * - Strukturované nadpisy a navigace
+ * - Přístupné formulářové prvky
+ * 
+ * Jak implementovat:
+ * 1. Použijte tyto ukázky jako vzor pro úpravu stávajících HTML šablon
+ * 2. Přizpůsobte atributy podle potřeby vaší aplikace
+ -->
+
+<!-- Přístupná navigace -->
+<nav aria-label="Hlavní navigace">
+  <button id="navToggle" aria-expanded="false" aria-controls="navMenu" aria-label="Otevřít menu">
+    <span class="sr-only">Menu</span>
+    <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+  </button>
+  
+  <ul id="navMenu" role="menu" aria-labelledby="navToggle">
+    <li role="none">
+      <a href="{{ url_for('index') }}" role="menuitem" {% if request.path == url_for('index') %}aria-current="page"{% endif %}>Fact Checker</a>
+    </li>
+    <li role="none">
+      <a href="{{ url_for('prompt') }}" role="menuitem" {% if request.path == url_for('prompt') %}aria-current="page"{% endif %}>Prompt</a>
+    </li>
+    <li role="none">
+      <a href="{{ url_for('support') }}" role="menuitem" {% if request.path == url_for('support') %}aria-current="page"{% endif %}>Podpoř projekt</a>
+    </li>
+  </ul>
+</nav>
+
+<!-- Přístupná drop zóna pro nahrávání obrázků -->
+<div id="dropZone" 
+     role="button" 
+     tabindex="0" 
+     aria-label="Oblast pro nahrání obrázku. Přetáhněte sem obrázek nebo klikněte pro výběr souboru."
+     aria-describedby="uploadInfoMessage"
+     aria-dropeffect="copy"
+     onkeydown="if(event.key === 'Enter' || event.key === ' ') { document.getElementById('imageInput').click(); event.preventDefault(); }">
+  
+  <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+  
+  <p>Přetáhni obrázek sem nebo klikni pro nahrání</p>
+  <p id="uploadInfoMessage" class="text-sm text-gray-600 mt-1">Podporované formáty: JPG, PNG, GIF, WebP. Maximální velikost: 5MB.</p>
+</div>
+
+<input type="file" id="imageInput" class="hidden" accept="image/*" aria-label="Vybrat obrázek k nahrání">
+
+<!-- Přístupný progress bar -->
+<div id="uploadProgressContainer" class="hidden" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Průběh nahrávání">
+  <div id="uploadProgressBar" style="width: 0%"></div>
+</div>
+
+<!-- Přístupná chybová zpráva -->
+<p id="uploadErrorMessage" class="hidden" role="alert" aria-live="assertive"></p>
+
+<!-- Přístupný náhled obrázku -->
+<div class="relative mt-4">
+  <img id="imagePreview" class="hidden" alt="Náhled nahraného obrázku" aria-describedby="imageActions">
+</div>
+
+<!-- Přístupná tlačítka pro manipulaci s obrázkem -->
+<div id="imageActions" class="flex space-x-2 mt-2">
+  <button id="cropImageButton" class="hidden" aria-label="Oříznout obrázek">Oříznout obrázek</button>
+  <button id="clearImageButton" class="hidden" aria-label="Odstranit obrázek">Odstranit obrázek</button>
+</div>
+
+<!-- Přístupný textový vstup -->
+<div>
+  <label for="textInput" class="block text-sm font-medium text-gray-700 mb-1">Text k ověření</label>
+  <textarea 
+    id="textInput" 
+    name="textInput" 
+    rows="4" 
+    class="w-full border border-gray-300 rounded-lg p-4 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
+    placeholder="Vložte text k ověření nebo doplňte kontext k obrázku..."
+    aria-describedby="textInputHelp"></textarea>
+  <p id="textInputHelp" class="text-sm text-gray-600 mt-1">Vložte text, který chcete ověřit, nebo doplňte kontext k nahranému obrázku.</p>
+</div>
+
+<!-- Přístupné tlačítko pro odeslání -->
+<button 
+  id="submitButton" 
+  type="submit" 
+  class="mt-4 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+  aria-label="Ověřit fakta">
+  <span>Ověřit fakta</span>
+  <span id="loadingIndicator" class="hidden" aria-hidden="true">
+    <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+    </svg>
+    Probíhá analýza...
+  </span>
+</button>
+
+<!-- Přístupné výsledky analýzy -->
+<div id="results" aria-live="polite">
+  <!-- Výsledky budou dynamicky vloženy zde -->
+</div>
+
+<!-- Vzor pro přístupné výsledky analýzy -->
+<div class="result-card" role="region" aria-label="Výsledek analýzy">
+  <div class="result-header">
+    <h2 id="resultTitle" class="result-title">Výsledek analýzy</h2>
+    <span class="truth-level truth-level-3" role="status" aria-label="Hodnocení pravdivosti: Zavádějící">Zavádějící</span>
+  </div>
+  
+  <div class="result-body">
+    <!-- Vizualizace hodnocení pravdivosti -->
+    <div class="truth-meter" role="meter" aria-label="Míra pravdivosti" aria-valuenow="3" aria-valuemin="1" aria-valuemax="5" data-level="3"></div>
+    
+    <!-- Rozbalovací sekce -->
+    <div class="collapsible-section">
+      <div class="collapsible-header" role="button" aria-expanded="false" aria-controls="detailExplanation" tabindex="0">
+        <h3>Detailní vysvětlení</h3>
+      </div>
+      <div id="detailExplanation" class="collapsible-content" aria-hidden="true">
+        <p>Obsah detailního vysvětlení...</p>
+      </div>
+    </div>
+    
+    <!-- Seznam zdrojů -->
+    <div class="mt-4">
+      <h3 id="sourceListHeading" class="text-lg font-medium mb-2">Zdroje</h3>
+      <ul class="sources-list" aria-labelledby="sourceListHeading">
+        <li>
+          <a href="https://example.com/source1" class="source-link" target="_blank" rel="noopener noreferrer">
+            <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+            Zdroj 1 <span class="sr-only">(otevře se v novém okně)</span>
+          </a>
+        </li>
+      </ul>
+    </div>
+  </div>
+  
+  <div class="result-footer">
+    <div class="flex justify-between items-center">
+      <button class="action-button action-button-secondary" aria-label="Sdílet výsledek">
+        <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><polyline points="16 6 12 2 8 6"></polyline><line x1="12" y1="2" x2="12" y2="15"></line></svg>
+        Sdílet
+      </button>
+      <button class="action-button action-button-primary" aria-label="Generovat odpověď pro sociální sítě">
+        <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+        Generovat odpověď
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Přístupné modální okno -->
+<div id="modal" class="hidden fixed inset-0 z-50 overflow-auto bg-black bg-opacity-50 flex items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="modalTitle" aria-describedby="modalDescription">
+  <div class="bg-white rounded-lg max-w-lg w-full mx-4 p-6" role="document">
+    <div class="flex justify-between items-start">
+      <h2 id="modalTitle" class="text-xl font-semibold">Název modálního okna</h2>
+      <button id="closeModal" class="text-gray-500 hover:text-gray-700" aria-label="Zavřít">
+        <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+    </div>
+    <div id="modalDescription" class="mt-4">
+      <!-- Obsah modálního okna -->
+    </div>
+    <div class="mt-6 flex justify-end space-x-3">
+      <button id="cancelModal" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">Zrušit</button>
+      <button id="confirmModal" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Potvrdit</button>
+    </div>
+  </div>
+</div>
+
+<!-- Přístupné oznámení -->
+<div id="notification" class="hidden fixed bottom-4 right-4 max-w-sm bg-white rounded-lg shadow-lg p-4 border-l-4 border-blue-500" role="alert" aria-live="assertive" aria-atomic="true">
+  <div class="flex items-start">
+    <div class="flex-shrink-0">
+      <svg aria-hidden="true" focusable="false" class="h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" /></svg>
+    </div>
+    <div class="ml-3">
+      <h3 class="text-sm font-medium text-gray-900">Titulek oznámení</h3>
+      <div class="mt-1 text-sm text-gray-600">
+        <p>Obsah oznámení</p>
+      </div>
+    </div>
+    <div class="ml-auto pl-3">
+      <button class="inline-flex text-gray-400 hover:text-gray-500" aria-label="Zavřít oznámení">
+        <svg aria-hidden="true" focusable="false" class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Přístupné přepínače -->
+<div class="flex items-center">
+  <button id="darkModeToggle" role="switch" aria-checked="false" class="relative inline-flex items-center h-6 rounded-full w-11 bg-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" tabindex="0" aria-label="Přepnout tmavý režim">
+    <span class="sr-only">Tmavý režim</span>
+    <span class="translate-x-1 inline-block w-4 h-4 transform bg-white rounded-full transition-transform"></span>
+  </button>
+  <span class="ml-2 text-sm text-gray-700">Tmavý režim</span>
+</div>
+
+<!-- Přístupný výběr jazyka -->
+<div>
+  <label for="languageSelect" class="block text-sm font-medium text-gray-700 mb-1">Jazyk</label>
+  <select id="languageSelect" name="language" class="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md">
+    <option value="cs">Čeština</option>
+    <option value="en">English</option>
+    <option value="sk">Slovenčina</option>
+  </select>
+</div>
+
+<!-- Přístupné přeskakování navigace -->
+<a href="#main" class="sr-only focus:not-sr-only focus:absolute focus:p-4 focus:bg-white focus:text-blue-600 focus:z-50">Přeskočit na hlavní obsah</a>
+
+<!-- Hlavní obsah s označením pro přeskakování navigace -->
+<main id="main" tabindex="-1">
+  <!-- Hlavní obsah stránky -->
+</main>
+
+<!-- Přístupná patička -->
+<footer role="contentinfo" class="bg-gray-800 text-white py-8">
+  <div class="container mx-auto px-4">
+    <div class="flex flex-col md:flex-row justify-between">
+      <div>
+        <h2 class="text-lg font-semibold mb-4">Fact Checker</h2>
+        <p class="text-sm text-gray-300">Nástroj pro ověřování faktů v textech a obrázcích pomocí umělé inteligence.</p>
+      </div>
+      <div>
+        <h3 class="text-lg font-semibold mb-4">Kontakt</h3>
+        <ul class="space-y-2">
+          <li>
+            <a href="mailto:info@factchecker-asistent.cz" class="text-gray-300 hover:text-white transition-colors">info@factchecker-asistent.cz</a>
+          </li>
+          <li>
+            <a href="https://github.com/JiriMynar" target="_blank" rel="noopener noreferrer" class="text-gray-300 hover:text-white transition-colors">GitHub <span class="sr-only">(otevře se v novém okně)</span></a>
+          </li>
+        </ul>
+      </div>
+    </div>
+    <div class="mt-8 pt-8 border-t border-gray-700 text-sm text-gray-400">
+      <p>&copy; 2025 Fact Checker. Všechna práva vyhrazena.</p>
+    </div>
+  </div>
+</footer>
+
+<!-- Přístupné klávesové zkratky -->
+<script>
+  // Přidání klávesových zkratek
+  document.addEventListener('keydown', function(e) {
+    // Alt + 1: Přejít na hlavní stránku
+    if (e.altKey && e.key === '1') {
+      window.location.href = "{{ url_for('index') }}";
+    }
+    
+    // Alt + 2: Přejít na stránku s popisem promptu
+    if (e.altKey && e.key === '2') {
+      window.location.href = "{{ url_for('prompt') }}";
+    }
+    
+    // Alt + 3: Přejít na stránku pro podporu projektu
+    if (e.altKey && e.key === '3') {
+      window.location.href = "{{ url_for('support') }}";
+    }
+    
+    // Alt + S: Zaměřit vyhledávací pole
+    if (e.altKey && e.key === 's') {
+      const textInput = document.getElementById('textInput');
+      if (textInput) {
+        textInput.focus();
+        e.preventDefault();
+      }
+    }
+    
+    // Alt + Enter: Odeslat formulář
+    if (e.altKey && e.key === 'Enter') {
+      const submitButton = document.getElementById('submitButton');
+      if (submitButton) {
+        submitButton.click();
+        e.preventDefault();
+      }
+    }
+  });
+</script>

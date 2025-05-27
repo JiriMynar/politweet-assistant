@@ -1,0 +1,1138 @@
+{% extends "base.html" %}
+
+{% block title %}Factchecker Asistent{% endblock %}
+
+{% block head %}
+<style>
+    .badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-weight: 600;
+        font-size: 0.875rem;
+    }
+    .badge-truth-1 { background-color: #16a34a; color: white; } /* Pravda */
+    .badge-truth-2 { background-color: #4ade80; color: white; } /* Spíše pravda */
+    .badge-truth-3 { background-color: #facc15; color: black; } /* Zavádějící */
+    .badge-truth-4 { background-color: #f97316; color: white; } /* Spíše lež */
+    .badge-truth-5 { background-color: #dc2626; color: white; } /* Lež */
+    
+    /* Vizuální škála pravdivosti */
+    .truth-scale {
+        position: relative;
+        height: 8px;
+        background: linear-gradient(to right, #dc2626, #f97316, #facc15, #4ade80, #16a34a);
+        border-radius: 4px;
+        margin: 1rem 0;
+    }
+    
+    .truth-scale-marker {
+        position: absolute;
+        width: 16px;
+        height: 16px;
+        background-color: white;
+        border: 2px solid #1e40af;
+        border-radius: 50%;
+        top: -4px;
+        transform: translateX(-50%);
+        z-index: 1;
+    }
+    
+    .truth-scale-labels {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 0.5rem;
+        font-size: 0.75rem;
+        color: #4b5563;
+    }
+    
+    /* Kreativní styly pro sekce */
+    .section-container {
+        margin-bottom: 2rem;
+    }
+    
+    /* Klíčové body - nový design */
+    .key-points-section {
+        position: relative;
+        background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+        border-radius: 1rem;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        overflow: hidden;
+    }
+    
+    .key-points-section::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 6px;
+        height: 100%;
+        background: linear-gradient(to bottom, #3b82f6, #1d4ed8);
+        border-radius: 3px 0 0 3px;
+    }
+    
+    .key-points-section h3 {
+        display: flex;
+        align-items: center;
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #1e40af;
+        margin-bottom: 1rem;
+    }
+    
+    .key-points-section h3::before {
+        content: "";
+        display: inline-block;
+        width: 24px;
+        height: 24px;
+        margin-right: 0.75rem;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%231e40af'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M13 10V3L4 14h7v7l9-11h-7z'%3E%3C/path%3E%3C/svg%3E");
+        background-size: contain;
+        background-repeat: no-repeat;
+    }
+    
+    .key-points-section ul {
+        margin: 0;
+        padding-left: 1.5rem;
+    }
+    
+    .key-points-section li {
+        margin-bottom: 0.75rem;
+        position: relative;
+        padding-left: 0.5rem;
+    }
+    
+    .key-points-section li::marker {
+        color: #3b82f6;
+    }
+    
+    /* Vysvětlení - nový design */
+    .explanation-section {
+        position: relative;
+        background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
+        border-radius: 1rem;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
+    
+    .explanation-section::after {
+        content: "";
+        position: absolute;
+        bottom: 0;
+        right: 0;
+        width: 100px;
+        height: 100px;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100' fill='none'%3E%3Cpath d='M95 5C75 5 5 75 5 95' stroke='%23e5e7eb' stroke-width='10' stroke-linecap='round'/%3E%3C/svg%3E");
+        background-size: contain;
+        background-repeat: no-repeat;
+        opacity: 0.5;
+        pointer-events: none;
+    }
+    
+    .explanation-section h3 {
+        display: flex;
+        align-items: center;
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #4b5563;
+        margin-bottom: 1rem;
+        border-bottom: 2px solid #e5e7eb;
+        padding-bottom: 0.75rem;
+    }
+    
+    .explanation-section h3::before {
+        content: "";
+        display: inline-block;
+        width: 24px;
+        height: 24px;
+        margin-right: 0.75rem;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%234b5563'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z'%3E%3C/path%3E%3C/svg%3E");
+        background-size: contain;
+        background-repeat: no-repeat;
+    }
+    
+    .explanation-content {
+        position: relative;
+        z-index: 1;
+    }
+    
+    /* Zdroje - nový design */
+    .sources-section {
+        position: relative;
+        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+        border-radius: 1rem;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        overflow: hidden;
+    }
+    
+    .sources-section::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 100px;
+        height: 100px;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100' fill='none'%3E%3Ccircle cx='75' cy='25' r='20' stroke='%23cbd5e1' stroke-width='2' stroke-dasharray='6 6'/%3E%3C/svg%3E");
+        background-size: contain;
+        background-repeat: no-repeat;
+        opacity: 0.5;
+        pointer-events: none;
+    }
+    
+    .sources-section h3 {
+        display: flex;
+        align-items: center;
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #475569;
+        margin-bottom: 1rem;
+    }
+    
+    .sources-section h3::before {
+        content: "";
+        display: inline-block;
+        width: 24px;
+        height: 24px;
+        margin-right: 0.75rem;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23475569'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253'%3E%3C/path%3E%3C/svg%3E");
+        background-size: contain;
+        background-repeat: no-repeat;
+    }
+    
+    .sources-primary, .sources-secondary {
+        margin-bottom: 1.5rem;
+        position: relative;
+        padding-left: 1rem;
+    }
+    
+    .sources-primary::before, .sources-secondary::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 3px;
+        border-radius: 1.5px;
+    }
+    
+    .sources-primary::before {
+        background: linear-gradient(to bottom, #3b82f6, #60a5fa);
+    }
+    
+    .sources-secondary::before {
+        background: linear-gradient(to bottom, #9ca3af, #d1d5db);
+    }
+    
+    .sources-primary h4, .sources-secondary h4 {
+        font-size: 1rem;
+        font-weight: 600;
+        margin-bottom: 0.75rem;
+        display: flex;
+        align-items: center;
+    }
+    
+    .sources-primary h4::before {
+        content: "";
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+        background-color: #3b82f6;
+        border-radius: 50%;
+        margin-right: 0.5rem;
+    }
+    
+    .sources-secondary h4::before {
+        content: "";
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+        background-color: #9ca3af;
+        border-radius: 50%;
+        margin-right: 0.5rem;
+    }
+    
+    .sources-section ul {
+        margin: 0;
+        padding-left: 1.5rem;
+    }
+    
+    .sources-section li {
+        margin-bottom: 0.5rem;
+    }
+    
+    .sources-section a {
+        position: relative;
+        transition: all 0.2s;
+    }
+    
+    .sources-section a:hover {
+        color: #2563eb;
+    }
+    
+    /* Odpověď pro sociální sítě - nový design */
+    .social-response-section {
+        position: relative;
+        background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+        border-radius: 1rem;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
+    
+    .social-response-section::before {
+        content: "";
+        position: absolute;
+        bottom: 0;
+        right: 0;
+        width: 100px;
+        height: 100px;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100' fill='none'%3E%3Cpath d='M20 80C20 57.909 37.909 40 60 40C82.091 40 100 57.909 100 80' stroke='%2393c5fd' stroke-width='2'/%3E%3Cpath d='M40 60C40 48.954 48.954 40 60 40C71.046 40 80 48.954 80 60' stroke='%2393c5fd' stroke-width='2'/%3E%3Ccircle cx='60' cy='40' r='10' stroke='%2393c5fd' stroke-width='2'/%3E%3C/svg%3E");
+        background-size: contain;
+        background-repeat: no-repeat;
+        opacity: 0.5;
+        pointer-events: none;
+    }
+    
+    .social-response-section h3 {
+        display: flex;
+        align-items: center;
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #1e40af;
+        margin-bottom: 1rem;
+    }
+    
+    .social-response-section h3::before {
+        content: "";
+        display: inline-block;
+        width: 24px;
+        height: 24px;
+        margin-right: 0.75rem;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%231e40af'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z'%3E%3C/path%3E%3C/svg%3E");
+        background-size: contain;
+        background-repeat: no-repeat;
+    }
+    
+    /* Tóny odpovědí */
+    .tone-button {
+        transition: all 0.2s;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .tone-button::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(to bottom right, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0));
+        opacity: 0;
+        transition: opacity 0.2s;
+    }
+    
+    .tone-button:hover::after {
+        opacity: 1;
+    }
+    
+    .tone-button.active {
+        box-shadow: 0 0 0 2px #3b82f6;
+    }
+    
+    .tone-button:hover {
+        transform: translateY(-2px);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Hero sekce s call-to-action -->
+<div class="bg-gradient-to-r from-blue-700 to-indigo-800 text-white rounded-xl shadow-xl mb-8 overflow-hidden">
+    <div class="container mx-auto px-6 py-12 md:py-16">
+        <div class="flex flex-col md:flex-row items-center">
+            <div class="md:w-3/5 mb-8 md:mb-0 md:pr-8">
+                <h1 class="text-3xl md:text-4xl font-bold mb-4 leading-tight">
+                    Nenechte se oklamat dezinformacemi
+                </h1>
+                <p class="text-xl md:text-2xl mb-6 text-blue-100">
+                    Ověřte fakta v textech a obrázcích pomocí umělé inteligence během několika sekund.
+                </p>
+                <div class="flex flex-wrap gap-3 mb-6">
+                    <div class="flex items-center">
+                        <div class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center mr-3">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                            </svg>
+                        </div>
+                        <span>Okamžité výsledky</span>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center mr-3">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                            </svg>
+                        </div>
+                        <span>Ověřené zdroje</span>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center mr-3">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <span>Detailní vysvětlení</span>
+                    </div>
+                </div>
+                <a href="#factchecker" class="inline-block bg-white text-blue-800 font-semibold px-6 py-3 rounded-lg shadow-md hover:bg-blue-50 transition-colors">
+                    Začít ověřovat fakta
+                </a>
+            </div>
+            <div class="md:w-2/5">
+                <img src="https://images.unsplash.com/photo-1590856029826-c7a73142bbf1?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80" alt="Ověřování faktů" class="rounded-lg shadow-lg">
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="factchecker" class="max-w-4xl mx-auto" x-data="factChecker()">
+    <div class="bg-white rounded-xl shadow-lg p-6 md:p-8">
+        <h2 class="text-2xl md:text-3xl font-semibold text-gray-800 mb-6">Ověřte fakta snadno a rychle</h2>
+        
+        <!-- Vstupní sekce -->
+        <div class="space-y-6">
+            <!-- Drop zóna pro obrázek -->
+            <div 
+                id="dropZone" 
+                class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer transition-all"
+                :class="{'border-blue-500 bg-blue-50': isDragging, 'has-image': hasImage}"
+                @dragover.prevent="isDragging = true"
+                @dragleave.prevent="isDragging = false"
+                @drop.prevent="handleDrop"
+                @click="document.getElementById('imageInput').click()"
+                @paste="handlePaste"
+                tabindex="0"
+            >
+                <template x-if="!hasImage">
+                    <div class="space-y-2">
+                        <div class="text-4xl">🖼️</div>
+                        <p class="text-gray-600">Přetáhni obrázek sem nebo klikni pro nahrání</p>
+                        <p class="text-sm text-blue-600">(Můžeš také použít Ctrl+V pro vložení obrázku ze schránky)</p>
+                    </div>
+                </template>
+                <template x-if="hasImage">
+                    <div class="relative">
+                        <img id="preview" :src="imagePreview" class="max-h-64 mx-auto" alt="Náhled obrázku">
+                        <button 
+                            @click.stop="clearImage" 
+                            class="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center"
+                            title="Odstranit obrázek"
+                        >×</button>
+                    </div>
+                </template>
+                <input type="file" id="imageInput" class="hidden" accept="image/*" @change="handleImageSelect">
+            </div>
+
+            <!-- Textové pole -->
+            <div>
+                <label for="textInput" class="block text-sm font-medium text-gray-700 mb-1">Text k ověření</label>
+                <textarea 
+                    id="textInput"
+                    x-model="textInput" 
+                    class="w-full border border-gray-300 rounded-lg p-4 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    rows="4" 
+                    placeholder="Vložte text k ověření nebo doplňte kontext k obrázku..."
+                ></textarea>
+            </div>
+
+            <!-- Checkbox pro generování odpovědi pro sociální sítě -->
+            <div class="flex items-center">
+                <input 
+                    type="checkbox" 
+                    id="generateSocial" 
+                    x-model="generateSocial"
+                    class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                >
+                <label for="generateSocial" class="ml-2 text-gray-700">Vygenerovat i odpověď pro sociální sítě</label>
+            </div>
+
+            <!-- Tlačítko pro analýzu s popisem -->
+            <div class="space-y-2">
+                <button 
+                    @click="analyze" 
+                    class="w-full py-4 px-6 bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white text-lg font-medium rounded-lg shadow-md transition-all flex items-center justify-center"
+                    :class="{'opacity-50 cursor-not-allowed': isAnalyzing || (!hasImage && !textInput.trim())}"
+                    :disabled="isAnalyzing || (!hasImage && !textInput.trim())"
+                >
+                    <template x-if="!isAnalyzing">
+                        <div class="flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                            </svg>
+                            Ověřit fakta
+                        </div>
+                    </template>
+                    <template x-if="isAnalyzing">
+                        <div class="flex items-center justify-center">
+                            <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Analyzuji...
+                        </div>
+                    </template>
+                </button>
+                <p class="text-sm text-gray-500 text-center">
+                    Kliknutím na tlačítko spustíte analýzu pomocí umělé inteligence, která ověří fakta v textu nebo na obrázku
+                </p>
+            </div>
+        </div>
+
+        <!-- Výsledky analýzy -->
+        <div x-show="analysisResult" x-cloak class="mt-8 border border-gray-200 rounded-lg p-6 bg-gray-50">
+            <div class="mb-4">
+                <h2 class="text-xl font-semibold text-gray-800 mb-2">Výsledek analýzy</h2>
+                
+                <!-- Badge s hodnocením a vizuální škála -->
+                <div class="mb-4">
+                    <div x-html="truthBadge" class="mb-2"></div>
+                    
+                    <!-- Vizuální škála pravdivosti -->
+                    <div class="truth-scale">
+                        <div class="truth-scale-marker" :style="truthScalePosition"></div>
+                    </div>
+                    <div class="truth-scale-labels">
+                        <span>Lež</span>
+                        <span>Spíše lež</span>
+                        <span>Zavádějící</span>
+                        <span>Spíše pravda</span>
+                        <span>Pravda</span>
+                    </div>
+                </div>
+                
+                <!-- Klíčové body - nový design -->
+                <div class="key-points-section" x-show="keyPoints.length > 0">
+                    <h3>Klíčové body</h3>
+                    <ul>
+                        <template x-for="(point, index) in keyPoints" :key="index">
+                            <li x-text="point"></li>
+                        </template>
+                    </ul>
+                </div>
+                
+                <!-- Obsah analýzy - nový design -->
+                <div class="explanation-section">
+                    <h3>Vysvětlení</h3>
+                    <div class="explanation-content prose max-w-none" x-html="formattedExplanation"></div>
+                </div>
+                
+                <!-- Sekce se zdroji - nový design -->
+                <div class="sources-section" x-show="sources.length > 0">
+                    <h3>Zdroje</h3>
+                    
+                    <!-- Primární zdroje -->
+                    <div class="sources-primary" x-show="primarySources.length > 0">
+                        <h4>Primární zdroje</h4>
+                        <ul class="list-disc pl-5 space-y-1">
+                            <template x-for="source in primarySources" :key="source">
+                                <li>
+                                    <a :href="source" target="_blank" class="text-blue-600 hover:underline break-all" x-text="source"></a>
+                                </li>
+                            </template>
+                        </ul>
+                    </div>
+                    
+                    <!-- Sekundární zdroje -->
+                    <div class="sources-secondary" x-show="secondarySources.length > 0">
+                        <h4>Sekundární zdroje</h4>
+                        <ul class="list-disc pl-5 space-y-1">
+                            <template x-for="source in secondarySources" :key="source">
+                                <li>
+                                    <a :href="source" target="_blank" class="text-blue-600 hover:underline break-all" x-text="source"></a>
+                                </li>
+                            </template>
+                        </ul>
+                    </div>
+                    
+                    <!-- Ostatní zdroje -->
+                    <div x-show="otherSources.length > 0">
+                        <h4 class="text-sm font-medium text-gray-700 mt-2 mb-1">Ostatní zdroje</h4>
+                        <ul class="list-disc pl-5 space-y-1">
+                            <template x-for="source in otherSources" :key="source">
+                                <li>
+                                    <a :href="source" target="_blank" class="text-blue-600 hover:underline break-all" x-text="source"></a>
+                                </li>
+                            </template>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Odpověď pro sociální sítě - nový design -->
+            <div class="social-response-section" x-show="generateSocial">
+                <h3>Odpověď pro sociální sítě</h3>
+                
+                <!-- Výběr tónu odpovědi -->
+                <div class="mb-4">
+                    <p class="text-sm text-gray-600 mb-2">Vyberte tón odpovědi:</p>
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
+                        <button 
+                            @click="generateSocialResponse('factual')" 
+                            class="tone-button px-4 py-2 border rounded-lg transition-colors"
+                            :class="{'bg-blue-100 border-blue-500 active': selectedTone === 'factual', 'border-gray-300 hover:bg-gray-50': selectedTone !== 'factual'}"
+                        >
+                            <div class="font-medium">Faktický</div>
+                            <div class="text-xs text-gray-500">Neutrální, věcný tón</div>
+                        </button>
+                        
+                        <button 
+                            @click="generateSocialResponse('sarcastic')" 
+                            class="tone-button px-4 py-2 border rounded-lg transition-colors"
+                            :class="{'bg-blue-100 border-blue-500 active': selectedTone === 'sarcastic', 'border-gray-300 hover:bg-gray-50': selectedTone !== 'sarcastic'}"
+                        >
+                            <div class="font-medium">Sarkastický</div>
+                            <div class="text-xs text-gray-500">Ironický tón s humorem</div>
+                        </button>
+                        
+                        <button 
+                            @click="generateSocialResponse('aggressive')" 
+                            class="tone-button px-4 py-2 border rounded-lg transition-colors"
+                            :class="{'bg-blue-100 border-blue-500 active': selectedTone === 'aggressive', 'border-gray-300 hover:bg-gray-50': selectedTone !== 'aggressive'}"
+                        >
+                            <div class="font-medium">Agresivní</div>
+                            <div class="text-xs text-gray-500">Důrazné odmítnutí dezinformací</div>
+                        </button>
+                        
+                        <button 
+                            @click="generateSocialResponse('educational')" 
+                            class="tone-button px-4 py-2 border rounded-lg transition-colors"
+                            :class="{'bg-blue-100 border-blue-500 active': selectedTone === 'educational', 'border-gray-300 hover:bg-gray-50': selectedTone !== 'educational'}"
+                        >
+                            <div class="font-medium">Vzdělávací</div>
+                            <div class="text-xs text-gray-500">Vysvětlující s dodatečnými informacemi</div>
+                        </button>
+                        
+                        <button 
+                            @click="generateSocialResponse('diplomatic')" 
+                            class="tone-button px-4 py-2 border rounded-lg transition-colors"
+                            :class="{'bg-blue-100 border-blue-500 active': selectedTone === 'diplomatic', 'border-gray-300 hover:bg-gray-50': selectedTone !== 'diplomatic'}"
+                        >
+                            <div class="font-medium">Diplomatický</div>
+                            <div class="text-xs text-gray-500">Vyvážený, respektující různé pohledy</div>
+                        </button>
+                        
+                        <button 
+                            @click="generateSocialResponse('humorous')" 
+                            class="tone-button px-4 py-2 border rounded-lg transition-colors"
+                            :class="{'bg-blue-100 border-blue-500 active': selectedTone === 'humorous', 'border-gray-300 hover:bg-gray-50': selectedTone !== 'humorous'}"
+                        >
+                            <div class="font-medium">Humorný</div>
+                            <div class="text-xs text-gray-500">Lehký, vtipný tón</div>
+                        </button>
+                    </div>
+                    
+                    <!-- Posuvník pro délku odpovědi -->
+                    <div class="mb-4">
+                        <label for="responseLength" class="block text-sm font-medium text-gray-700 mb-1">Délka odpovědi</label>
+                        <input 
+                            type="range" 
+                            id="responseLength" 
+                            x-model="responseLength" 
+                            min="1" 
+                            max="3" 
+                            step="1" 
+                            class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                            @change="generateSocialResponse(selectedTone)"
+                        >
+                        <div class="flex justify-between text-xs text-gray-500 mt-1">
+                            <span>Krátká (140 znaků)</span>
+                            <span>Střední (280 znaků)</span>
+                            <span>Dlouhá (500 znaků)</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Zobrazení odpovědi -->
+                <div class="bg-white border border-gray-300 rounded-lg p-4 relative">
+                    <template x-if="isGeneratingSocial">
+                        <div class="flex justify-center items-center py-4">
+                            <svg class="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <span class="ml-2 text-gray-600">Generuji odpověď...</span>
+                        </div>
+                    </template>
+                    <template x-if="!isGeneratingSocial && socialResponse">
+                        <div>
+                            <p x-text="socialResponse"></p>
+                            <div class="absolute top-2 right-2 flex">
+                                <button 
+                                    @click="regenerateSocialResponse()" 
+                                    class="text-blue-600 hover:text-blue-800 mr-2"
+                                    title="Vygenerovat znovu"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                    </svg>
+                                </button>
+                                <button 
+                                    @click="copyToClipboard(socialResponse)" 
+                                    class="text-blue-600 hover:text-blue-800"
+                                    title="Kopírovat do schránky"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <!-- Tlačítka pro export a sdílení -->
+            <div class="mt-6 flex flex-wrap gap-3">
+                <button 
+                    @click="copyToClipboard(analysisResult)" 
+                    class="flex items-center px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg transition-colors"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                    Kopírovat celou analýzu
+                </button>
+                
+                <button 
+                    @click="exportToPDF()" 
+                    class="flex items-center px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg transition-colors"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Exportovat jako PDF
+                </button>
+                
+                <div class="dropdown relative">
+                    <button 
+                        @click="showShareOptions = !showShareOptions" 
+                        class="flex items-center px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg transition-colors"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                        </svg>
+                        Sdílet
+                    </button>
+                    <div 
+                        x-show="showShareOptions" 
+                        @click.away="showShareOptions = false"
+                        class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10"
+                    >
+                        <div class="py-1">
+                            <a href="#" @click.prevent="shareOnTwitter()" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Twitter</a>
+                            <a href="#" @click.prevent="shareOnFacebook()" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Facebook</a>
+                            <a href="#" @click.prevent="shareOnLinkedIn()" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">LinkedIn</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Sekce "Jak to funguje" -->
+    <div class="mt-12 bg-white rounded-xl shadow-lg p-6 md:p-8">
+        <h2 class="text-2xl font-semibold text-gray-800 mb-6">Jak Factchecker Asistent funguje?</h2>
+        
+        <div class="grid md:grid-cols-3 gap-8">
+            <div class="bg-blue-50 rounded-lg p-6 text-center">
+                <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                </div>
+                <h3 class="text-lg font-medium text-gray-800 mb-2">1. Nahrajte obsah</h3>
+                <p class="text-gray-600">Nahrajte obrázek nebo vložte text, který chcete ověřit. Můžete také kombinovat obojí pro přesnější výsledky.</p>
+            </div>
+            
+            <div class="bg-blue-50 rounded-lg p-6 text-center">
+                <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                    </svg>
+                </div>
+                <h3 class="text-lg font-medium text-gray-800 mb-2">2. Umělá inteligence analyzuje</h3>
+                <p class="text-gray-600">Náš systém využívá pokročilý model GPT-4o od OpenAI k analýze obsahu a ověření faktů.</p>
+            </div>
+            
+            <div class="bg-blue-50 rounded-lg p-6 text-center">
+                <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
+                <h3 class="text-lg font-medium text-gray-800 mb-2">3. Získejte výsledky</h3>
+                <p class="text-gray-600">Obdržíte detailní analýzu s hodnocením pravdivosti, vysvětlením a odkazy na ověřené zdroje.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function factChecker() {
+        return {
+            textInput: '',
+            imageFile: null,
+            imagePreview: null,
+            hasImage: false,
+            isDragging: false,
+            isAnalyzing: false,
+            isGeneratingSocial: false,
+            generateSocial: false,
+            analysisResult: null,
+            socialResponse: null,
+            selectedTone: 'factual',
+            responseLength: 2, // 1=krátká, 2=střední, 3=dlouhá
+            showShareOptions: false,
+            keyPoints: [],
+            
+            // Zpracování přetažení obrázku
+            handleDrop(event) {
+                this.isDragging = false;
+                const files = event.dataTransfer.files;
+                if (files.length > 0 && files[0].type.startsWith('image/')) {
+                    this.processImageFile(files[0]);
+                }
+            },
+            
+            // Zpracování výběru obrázku
+            handleImageSelect(event) {
+                const files = event.target.files;
+                if (files.length > 0) {
+                    this.processImageFile(files[0]);
+                }
+            },
+            
+            // Zpracování vložení obrázku ze schránky
+            handlePaste(event) {
+                const items = (event.clipboardData || event.originalEvent.clipboardData).items;
+                for (const item of items) {
+                    if (item.type.indexOf('image') === 0) {
+                        const blob = item.getAsFile();
+                        this.processImageFile(blob);
+                        break;
+                    }
+                }
+            },
+            
+            // Zpracování souboru obrázku
+            processImageFile(file) {
+                this.imageFile = file;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    this.imagePreview = e.target.result;
+                    this.hasImage = true;
+                };
+                reader.readAsDataURL(file);
+            },
+            
+            // Vymazání obrázku
+            clearImage() {
+                this.imageFile = null;
+                this.imagePreview = null;
+                this.hasImage = false;
+                document.getElementById('imageInput').value = '';
+            },
+            
+            // Analýza obsahu
+            async analyze() {
+                if ((!this.textInput.trim() && !this.hasImage) || this.isAnalyzing) {
+                    return;
+                }
+                
+                this.isAnalyzing = true;
+                this.analysisResult = null;
+                this.socialResponse = null;
+                this.keyPoints = [];
+                
+                try {
+                    const formData = new FormData();
+                    
+                    if (this.textInput.trim()) {
+                        formData.append('text', this.textInput);
+                    }
+                    
+                    if (this.imageFile) {
+                        formData.append('image', this.imageFile);
+                    }
+                    
+                    formData.append('generate_social', this.generateSocial);
+                    
+                    const response = await fetch('/api/analyze', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
+                    const data = await response.json();
+                    
+                    if (data.error) {
+                        throw new Error(data.error);
+                    }
+                    
+                    this.analysisResult = data.analysis;
+                    
+                    // Extrakce klíčových bodů
+                    this.extractKeyPoints();
+                    
+                    if (this.generateSocial && data.social) {
+                        this.socialResponse = data.social;
+                    }
+                    
+                    // Automaticky scrollovat k výsledkům
+                    setTimeout(() => {
+                        document.querySelector('.mt-8').scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }, 100);
+                    
+                } catch (error) {
+                    console.error('Chyba při analýze:', error);
+                    alert('Nastala chyba při analýze: ' + error.message);
+                } finally {
+                    this.isAnalyzing = false;
+                }
+            },
+            
+            // Extrakce klíčových bodů z analýzy
+            extractKeyPoints() {
+                if (!this.analysisResult) return;
+                
+                const keyPointsMatch = this.analysisResult.match(/Klíčové body:([\s\S]*?)(?=\n\n)/);
+                if (keyPointsMatch) {
+                    const keyPointsText = keyPointsMatch[1];
+                    this.keyPoints = keyPointsText
+                        .split('\n')
+                        .map(line => line.trim())
+                        .filter(line => line.startsWith('-'))
+                        .map(line => line.substring(1).trim());
+                }
+            },
+            
+            // Generování odpovědi pro sociální sítě v různých tónech
+            async generateSocialResponse(tone) {
+                if (!this.analysisResult || this.isGeneratingSocial) return;
+                
+                this.selectedTone = tone;
+                this.isGeneratingSocial = true;
+                
+                try {
+                    const formData = new FormData();
+                    formData.append('analysis', this.analysisResult);
+                    formData.append('tone', tone);
+                    formData.append('length', this.responseLength);
+                    
+                    const response = await fetch('/api/generate-social', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
+                    const data = await response.json();
+                    
+                    if (data.error) {
+                        throw new Error(data.error);
+                    }
+                    
+                    this.socialResponse = data.social;
+                } catch (error) {
+                    console.error('Chyba při generování odpovědi:', error);
+                    alert('Nastala chyba při generování odpovědi: ' + error.message);
+                } finally {
+                    this.isGeneratingSocial = false;
+                }
+            },
+            
+            // Regenerace odpovědi pro sociální sítě se stejným tónem
+            regenerateSocialResponse() {
+                this.generateSocialResponse(this.selectedTone);
+            },
+            
+            // Kopírování textu do schránky
+            copyToClipboard(text) {
+                navigator.clipboard.writeText(text)
+                    .then(() => {
+                        alert('Zkopírováno do schránky!');
+                    })
+                    .catch(err => {
+                        console.error('Chyba při kopírování do schránky:', err);
+                        alert('Nepodařilo se zkopírovat do schránky: ' + err.message);
+                    });
+            },
+            
+            // Export do PDF
+            exportToPDF() {
+                alert('Funkce exportu do PDF bude brzy k dispozici!');
+                // Implementace exportu do PDF by vyžadovala knihovnu jako jsPDF
+            },
+            
+            // Sdílení na sociálních sítích
+            shareOnTwitter() {
+                const text = this.socialResponse || `Ověřil/a jsem fakta: ${this.truthRating}`;
+                const url = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(text);
+                window.open(url, '_blank');
+            },
+            
+            shareOnFacebook() {
+                const url = 'https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(window.location.href);
+                window.open(url, '_blank');
+            },
+            
+            shareOnLinkedIn() {
+                const text = this.socialResponse || `Ověřil/a jsem fakta: ${this.truthRating}`;
+                const url = 'https://www.linkedin.com/shareArticle?mini=true&url=' + encodeURIComponent(window.location.href) + '&title=' + encodeURIComponent('Factchecker Asistent') + '&summary=' + encodeURIComponent(text);
+                window.open(url, '_blank');
+            },
+            
+            // Formátování vysvětlení pro zobrazení
+            get formattedExplanation() {
+                if (!this.analysisResult) return '';
+                
+                // Odstranit sekci "Status", "Klíčové body" a "Zdroje", protože ty zobrazujeme zvlášť
+                let explanation = this.analysisResult
+                    .replace(/Status: [^\n]+\n\n/, '')
+                    .replace(/Klíčové body:[\s\S]*?\n\n/, '')
+                    .replace(/Vysvětlení:/i, '')
+                    .replace(/Zdroje:[\s\S]*$/, '');
+                
+                // Zvýraznění odkazů a formátování textu
+                explanation = explanation
+                    .replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" class="text-blue-600 hover:underline break-all">$1</a>')
+                    .replace(/\n\n/g, '</p><p class="mb-4">')
+                    .replace(/\n/g, '<br>');
+                
+                return `<p class="mb-4">${explanation}</p>`;
+            },
+            
+            // Získání hodnocení pravdivosti (1-5)
+            get truthRating() {
+                if (!this.analysisResult) return 0;
+                
+                const statusMatch = this.analysisResult.match(/Status: ([1-5])\./);
+                if (!statusMatch) return 0;
+                
+                return parseInt(statusMatch[1]);
+            },
+            
+            // Pozice markeru na škále pravdivosti
+            get truthScalePosition() {
+                const rating = this.truthRating;
+                if (!rating) return 'left: 50%';
+                
+                // Převod hodnocení 1-5 na procenta (5=0%, 1=100%)
+                const percentage = 100 - ((rating - 1) * 25);
+                return `left: ${percentage}%`;
+            },
+            
+            // Badge s hodnocením pravdivosti
+            get truthBadge() {
+                if (!this.analysisResult) return '';
+                
+                const statusMatch = this.analysisResult.match(/Status: ([1-5]\. [^<\n]+)/);
+                if (!statusMatch) return '';
+                
+                const status = statusMatch[1];
+                let badgeClass = 'badge ';
+                
+                if (status.includes('1. Pravda')) {
+                    badgeClass += 'badge-truth-1';
+                } else if (status.includes('2. Spíše pravda')) {
+                    badgeClass += 'badge-truth-2';
+                } else if (status.includes('3. Zavádějící')) {
+                    badgeClass += 'badge-truth-3';
+                } else if (status.includes('4. Spíše lež')) {
+                    badgeClass += 'badge-truth-4';
+                } else if (status.includes('5. Lež')) {
+                    badgeClass += 'badge-truth-5';
+                }
+                
+                return `<span class="${badgeClass}">${status}</span>`;
+            },
+            
+            // Kategorizace zdrojů
+            get primarySources() {
+                if (!this.analysisResult) return [];
+                
+                const sourcesMatch = this.analysisResult.match(/Primární zdroje:([\s\S]*?)(?=\n\n|Sekundární zdroje:|$)/);
+                if (!sourcesMatch) return [];
+                
+                const sourcesText = sourcesMatch[1];
+                const urlRegex = /(https?:\/\/[^\s]+)/g;
+                const sources = [];
+                let match;
+                
+                while ((match = urlRegex.exec(sourcesText)) !== null) {
+                    sources.push(match[1]);
+                }
+                
+                return sources;
+            },
+            
+            get secondarySources() {
+                if (!this.analysisResult) return [];
+                
+                const sourcesMatch = this.analysisResult.match(/Sekundární zdroje:([\s\S]*?)(?=\n\n|$)/);
+                if (!sourcesMatch) return [];
+                
+                const sourcesText = sourcesMatch[1];
+                const urlRegex = /(https?:\/\/[^\s]+)/g;
+                const sources = [];
+                let match;
+                
+                while ((match = urlRegex.exec(sourcesText)) !== null) {
+                    sources.push(match[1]);
+                }
+                
+                return sources;
+            },
+            
+            // Ostatní zdroje (které nejsou kategorizované)
+            get otherSources() {
+                const allSources = this.sources;
+                const categorizedSources = [...this.primarySources, ...this.secondarySources];
+                
+                return allSources.filter(source => !categorizedSources.includes(source));
+            },
+            
+            // Všechny zdroje
+            get sources() {
+                if (!this.analysisResult) return [];
+                
+                const sourcesMatch = this.analysisResult.match(/Zdroje: ([\s\S]+)/);
+                if (!sourcesMatch) return [];
+                
+                const sourcesText = sourcesMatch[1];
+                const urlRegex = /(https?:\/\/[^\s]+)/g;
+                const sources = [];
+                let match;
+                
+                while ((match = urlRegex.exec(sourcesText)) !== null) {
+                    sources.push(match[1]);
+                }
+                
+                return sources;
+            }
+        };
+    }
+</script>
+{% endblock %}
