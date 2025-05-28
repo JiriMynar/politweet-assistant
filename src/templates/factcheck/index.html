@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FactCheck - Ověřit tvrzení</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+</head>
+<body>
+    {% extends "base.html" %}
+    
+    {% block content %}
+    <section class="factcheck-hero">
+        <div class="section-header">
+            <h1>Ověřte tvrzení</h1>
+            <p>Zadejte tvrzení, které chcete analyzovat pomocí umělé inteligence</p>
+        </div>
+        
+        <div class="factcheck-form-container">
+            <form action="{{ url_for('factcheck.analyze') }}" method="POST" class="factcheck-form">
+                <div class="form-group">
+                    <label for="claim_text">Tvrzení k ověření</label>
+                    <textarea name="claim_text" id="claim_text" rows="4" placeholder="Např. 'Země je kulatá.' nebo 'Vakcíny způsobují autismus.'" required></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="analysis_type">Typ analýzy</label>
+                    <div class="analysis-type-selector">
+                        <div class="analysis-type-option">
+                            <input type="radio" name="analysis_type" id="analysis_quick" value="quick">
+                            <label for="analysis_quick">
+                                <div class="option-icon"><i class="fas fa-bolt"></i></div>
+                                <div class="option-info">
+                                    <h4>Rychlá</h4>
+                                    <p>Základní analýza zaměřená na klíčové aspekty tvrzení</p>
+                                </div>
+                            </label>
+                        </div>
+                        
+                        <div class="analysis-type-option">
+                            <input type="radio" name="analysis_type" id="analysis_standard" value="standard" checked>
+                            <label for="analysis_standard">
+                                <div class="option-icon"><i class="fas fa-balance-scale"></i></div>
+                                <div class="option-info">
+                                    <h4>Standardní</h4>
+                                    <p>Vyvážená analýza s důkladným vysvětlením a zdroji</p>
+                                </div>
+                            </label>
+                        </div>
+                        
+                        <div class="analysis-type-option">
+                            <input type="radio" name="analysis_type" id="analysis_detailed" value="detailed">
+                            <label for="analysis_detailed">
+                                <div class="option-icon"><i class="fas fa-search-plus"></i></div>
+                                <div class="option-info">
+                                    <h4>Detailní</h4>
+                                    <p>Hloubková analýza s kontextem a alternativními interpretacemi</p>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary btn-large">
+                        <i class="fas fa-check-circle"></i> Ověřit tvrzení
+                    </button>
+                </div>
+                
+                <div class="form-info">
+                    <p>
+                        <i class="fas fa-info-circle"></i>
+                        Analýza může trvat několik sekund v závislosti na složitosti tvrzení.
+                    </p>
+                    {% if not session.get('user_id') %}
+                    <p>
+                        <i class="fas fa-user"></i>
+                        <a href="{{ url_for('auth.login') }}">Přihlaste se</a> pro ukládání historie analýz.
+                    </p>
+                    {% endif %}
+                    {% if not session.get('is_supporter') %}
+                    <p>
+                        <i class="fas fa-heart"></i>
+                        <a href="{{ url_for('support.index') }}">Staňte se podporovatelem</a> pro neomezený počet analýz.
+                    </p>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+    </section>
+    
+    <section class="factcheck-examples">
+        <div class="section-header">
+            <h2>Příklady tvrzení k ověření</h2>
+            <p>Klikněte na příklad pro jeho vložení do formuláře</p>
+        </div>
+        
+        <div class="examples-grid">
+            <div class="example-card" data-claim="Země je plochá.">
+                <p>"Země je plochá."</p>
+                <button class="btn btn-text">Použít příklad</button>
+            </div>
+            <div class="example-card" data-claim="Vakcíny proti COVID-19 obsahují mikročipy pro sledování lidí.">
+                <p>"Vakcíny proti COVID-19 obsahují mikročipy pro sledování lidí."</p>
+                <button class="btn btn-text">Použít příklad</button>
+            </div>
+            <div class="example-card" data-claim="Česká republika je členem Evropské unie od roku 2004.">
+                <p>"Česká republika je členem Evropské unie od roku 2004."</p>
+                <button class="btn btn-text">Použít příklad</button>
+            </div>
+            <div class="example-card" data-claim="Konzumace čokolády způsobuje akné.">
+                <p>"Konzumace čokolády způsobuje akné."</p>
+                <button class="btn btn-text">Použít příklad</button>
+            </div>
+        </div>
+    </section>
+    
+    <section class="factcheck-tips">
+        <div class="section-header">
+            <h2>Tipy pro efektivní fact-checking</h2>
+            <p>Jak získat nejlepší výsledky při ověřování faktů</p>
+        </div>
+        
+        <div class="tips-grid">
+            <div class="tip-card">
+                <div class="tip-icon">
+                    <i class="fas fa-quote-right"></i>
+                </div>
+                <h3>Buďte konkrétní</h3>
+                <p>Zadávejte jasná a konkrétní tvrzení, která lze ověřit. Vyhněte se vágním nebo subjektivním výrokům.</p>
+            </div>
+            <div class="tip-card">
+                <div class="tip-icon">
+                    <i class="fas fa-text-width"></i>
+                </div>
+                <h3>Optimální délka</h3>
+                <p>Nejlepší výsledky získáte s tvrzeními o délce jedné až tří vět, které obsahují ověřitelné informace.</p>
+            </div>
+            <div class="tip-card">
+                <div class="tip-icon">
+                    <i class="fas fa-language"></i>
+                </div>
+                <h3>Používejte přesné citace</h3>
+                <p>Pokud ověřujete citát, použijte přesné znění a případně uveďte kontext nebo zdroj.</p>
+            </div>
+            <div class="tip-card">
+                <div class="tip-icon">
+                    <i class="fas fa-search-plus"></i>
+                </div>
+                <h3>Zvolte správný typ analýzy</h3>
+                <p>Pro složitější nebo kontroverzní tvrzení použijte detailní analýzu, která poskytne hlubší kontext.</p>
+            </div>
+        </div>
+    </section>
+    
+    <section class="education-cta">
+        <div class="cta-content">
+            <h2>Chcete se naučit více o fact-checkingu?</h2>
+            <p>Navštivte naši vzdělávací sekci, kde najdete materiály o mediální gramotnosti, logických chybách a manipulativních technikách.</p>
+            <a href="{{ url_for('education.index') }}" class="btn btn-secondary">Přejít do vzdělávací sekce</a>
+        </div>
+    </section>
+    {% endblock %}
+    
+    {% block scripts %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Funkce pro vložení příkladu do formuláře
+            const exampleCards = document.querySelectorAll('.example-card');
+            const claimTextarea = document.getElementById('claim_text');
+            
+            exampleCards.forEach(card => {
+                card.addEventListener('click', function() {
+                    const claim = this.getAttribute('data-claim');
+                    claimTextarea.value = claim;
+                    claimTextarea.focus();
+                    
+                    // Plynulé scrollování k formuláři
+                    document.querySelector('.factcheck-form-container').scrollIntoView({
+                        behavior: 'smooth'
+                    });
+                });
+            });
+        });
+    </script>
+    {% endblock %}
+</body>
+</html>

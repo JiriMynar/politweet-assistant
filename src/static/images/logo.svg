@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    .logo-text { font-family: 'Roboto', sans-serif; font-weight: bold; }
+    .primary { fill: #2D3E50; }
+    .secondary { fill: #3498DB; }
+    .accent { fill: #E74C3C; }
+  </style>
+  
+  <!-- Background Circle -->
+  <circle cx="100" cy="100" r="90" fill="white" stroke="#3498DB" stroke-width="4"/>
+  
+  <!-- Magnifying Glass -->
+  <g transform="translate(50, 50) scale(0.8)">
+    <circle cx="60" cy="60" r="40" fill="none" stroke="#2D3E50" stroke-width="12"/>
+    <line x1="90" y1="90" x2="120" y2="120" stroke="#2D3E50" stroke-width="12" stroke-linecap="round"/>
+    
+    <!-- Check Mark -->
+    <path d="M 50 60 L 70 80 L 100 40" fill="none" stroke="#E74C3C" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  
+  <!-- Text "FactCheck" - Removed from SVG, will be added via HTML -->
+</svg>

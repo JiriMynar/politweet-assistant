@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FactCheck - Domovská stránka</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+</head>
+<body>
+    {% extends "base.html" %}
+    
+    {% block content %}
+    <section class="hero">
+        <div class="hero-content">
+            <h1>Ověřte fakta. Bojujte proti dezinformacím.</h1>
+            <p>FactCheck vám pomůže rozlišit mezi pravdou a lží pomocí pokročilé analýzy založené na umělé inteligenci.</p>
+            <div class="hero-cta">
+                <a href="{{ url_for('factcheck.index') }}" class="btn btn-primary btn-large">Ověřit tvrzení</a>
+                <a href="{{ url_for('education.index') }}" class="btn btn-secondary btn-large">Vzdělávat se</a>
+            </div>
+        </div>
+        <div class="hero-image">
+            <img src="{{ url_for('static', filename='images/hero-illustration.svg') }}" alt="Ilustrace fact-checkingu">
+        </div>
+    </section>
+
+    <section class="how-it-works">
+        <div class="section-header">
+            <h2>Jak to funguje</h2>
+            <p>Jednoduchý proces ověření faktů ve třech krocích</p>
+        </div>
+        <div class="steps">
+            <div class="step">
+                <div class="step-icon">
+                    <i class="fas fa-keyboard"></i>
+                </div>
+                <h3>1. Zadejte tvrzení</h3>
+                <p>Vložte tvrzení, které chcete ověřit. Může jít o citát, novinový titulek nebo jakékoliv faktické tvrzení.</p>
+            </div>
+            <div class="step">
+                <div class="step-icon">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <h3>2. Analýza AI</h3>
+                <p>Náš systém využívající umělou inteligenci analyzuje tvrzení, vyhledává důkazy a identifikuje případné manipulativní techniky.</p>
+            </div>
+            <div class="step">
+                <div class="step-icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <h3>3. Získejte výsledek</h3>
+                <p>Obdržíte přehledný výsledek s verdiktem o pravdivosti, vysvětlením a zdroji, které můžete dále zkoumat.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="recent-analyses">
+        <div class="section-header">
+            <h2>Nedávné analýzy</h2>
+            <p>Podívejte se na příklady nedávno ověřených tvrzení</p>
+        </div>
+        <div class="analyses-grid">
+            <div class="analysis-card">
+                <div class="verdict verdict-true">Pravdivé</div>
+                <p class="claim">"Česká republika má jednu z nejnižších měr nezaměstnanosti v EU."</p>
+                <div class="analysis-meta">
+                    <span class="date">Před 2 hodinami</span>
+                    <a href="#" class="details-link">Zobrazit detaily</a>
+                </div>
+            </div>
+            <div class="analysis-card">
+                <div class="verdict verdict-partially-true">Částečně pravdivé</div>
+                <p class="claim">"Očkování proti COVID-19 bylo vyvinuto rychleji než jakákoliv jiná vakcína v historii."</p>
+                <div class="analysis-meta">
+                    <span class="date">Před 5 hodinami</span>
+                    <a href="#" class="details-link">Zobrazit detaily</a>
+                </div>
+            </div>
+            <div class="analysis-card">
+                <div class="verdict verdict-false">Nepravdivé</div>
+                <p class="claim">"5G sítě způsobují zdravotní problémy včetně rakoviny a neplodnosti."</p>
+                <div class="analysis-meta">
+                    <span class="date">Před 1 dnem</span>
+                    <a href="#" class="details-link">Zobrazit detaily</a>
+                </div>
+            </div>
+            <div class="analysis-card">
+                <div class="verdict verdict-misleading">Zavádějící</div>
+                <p class="claim">"Solární panely produkují více emisí při výrobě, než kolik ušetří během své životnosti."</p>
+                <div class="analysis-meta">
+                    <span class="date">Před 2 dny</span>
+                    <a href="#" class="details-link">Zobrazit detaily</a>
+                </div>
+            </div>
+        </div>
+        <div class="section-footer">
+            <a href="{{ url_for('factcheck.index') }}" class="btn btn-secondary">Ověřit vlastní tvrzení</a>
+        </div>
+    </section>
+
+    <section class="education-preview">
+        <div class="section-header">
+            <h2>Vzdělávejte se v mediální gramotnosti</h2>
+            <p>Naučte se rozpoznávat dezinformace a manipulativní techniky</p>
+        </div>
+        <div class="education-cards">
+            <div class="education-card">
+                <img src="{{ url_for('static', filename='images/media-literacy.svg') }}" alt="Mediální gramotnost">
+                <h3>Mediální gramotnost</h3>
+                <p>Základní principy kritického hodnocení mediálních sdělení a informací.</p>
+                <a href="{{ url_for('education.media_literacy') }}" class="btn btn-text">Zjistit více</a>
+            </div>
+            <div class="education-card">
+                <img src="{{ url_for('static', filename='images/logical-fallacies.svg') }}" alt="Logické chyby">
+                <h3>Logické chyby</h3>
+                <p>Naučte se rozpoznávat běžné logické chyby v argumentaci a diskuzi.</p>
+                <a href="{{ url_for('education.logical_fallacies') }}" class="btn btn-text">Zjistit více</a>
+            </div>
+            <div class="education-card">
+                <img src="{{ url_for('static', filename='images/manipulation.svg') }}" alt="Manipulativní techniky">
+                <h3>Manipulativní techniky</h3>
+                <p>Jak rozpoznat a bránit se proti běžným manipulativním technikám.</p>
+                <a href="{{ url_for('education.manipulation_techniques') }}" class="btn btn-text">Zjistit více</a>
+            </div>
+        </div>
+    </section>
+
+    <section class="support-cta">
+        <div class="support-content">
+            <h2>Podpořte náš projekt</h2>
+            <p>Pomáhejte nám v boji proti dezinformacím a přispějte k informovanější společnosti.</p>
+            <div class="support-buttons">
+                <a href="{{ url_for('support.one_time') }}" class="btn btn-primary">Jednorázový příspěvek</a>
+                <a href="{{ url_for('support.monthly') }}" class="btn btn-secondary">Pravidelná podpora</a>
+            </div>
+        </div>
+        <div class="support-benefits">
+            <div class="benefit">
+                <i class="fas fa-infinity"></i>
+                <p>Neomezené analýzy</p>
+            </div>
+            <div class="benefit">
+                <i class="fas fa-tachometer-alt"></i>
+                <p>Prioritní zpracování</p>
+            </div>
+            <div class="benefit">
+                <i class="fas fa-file-export"></i>
+                <p>Export výsledků</p>
+            </div>
+            <div class="benefit">
+                <i class="fas fa-medal"></i>
+                <p>Odznak podporovatele</p>
+            </div>
+        </div>
+    </section>
+    {% endblock %}
+</body>
+</html>
