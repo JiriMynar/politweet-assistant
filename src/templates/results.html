@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Výsledky analýzy | Fact-Checking Aplikace</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <link rel="icon" href="{{ url_for('static', filename='images/favicon.ico') }}">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="logo-container">
+                <img src="{{ url_for('static', filename='images/logo.svg') }}" alt="Logo" class="logo" onerror="this.src='{{ url_for('static', filename='images/logo-fallback.png') }}'">
+                <h1>Fact-Checking Aplikace</h1>
+            </div>
+            <div class="header-controls">
+                <div class="language-selector">
+                    <select id="language-select">
+                        <option value="cs" selected>Čeština</option>
+                        <option value="en">English</option>
+                        <option value="sk">Slovenčina</option>
+                    </select>
+                </div>
+                <a href="#" class="support-button">
+                    <span class="heart-icon">❤</span>
+                    <span>Podpořit projekt</span>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <div class="container">
+            <section class="results-header">
+                <div class="back-button-container">
+                    <a href="/" class="back-button">
+                        <span class="back-icon">←</span>
+                        <span>Zpět na analýzu</span>
+                    </a>
+                </div>
+                
+                <div class="results-summary">
+                    <div class="truth-rating-container">
+                        <div class="truth-rating {{ result.truth_rating|lower|replace(' ', '-') }}">
+                            {{ result.truth_rating }}
+                        </div>
+                        <div class="truth-meter">
+                            <div class="truth-meter-bar" style="width: 
+                                {% if result.truth_rating == 'Pravdivé' %}100%
+                                {% elif result.truth_rating == 'Převážně pravdivé' %}80%
+                                {% elif result.truth_rating == 'Částečně pravdivé' %}60%
+                                {% elif result.truth_rating == 'Převážně nepravdivé' %}40%
+                                {% elif result.truth_rating == 'Nepravdivé' %}20%
+                                {% elif result.truth_rating == 'Zavádějící' %}30%
+                                {% elif result.truth_rating == 'Nedostatečné údaje' %}50%
+                                {% elif result.truth_rating == 'Neověřitelné' %}50%
+                                {% elif result.truth_rating == 'Satira' %}50%
+                                {% else %}50%{% endif %}">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="content-summary">
+                        <h2>Souhrn analyzovaného obsahu</h2>
+                        <p>{{ result.content_summary }}</p>
+                    </div>
+                </div>
+            </section>
+            
+            <section class="results-tabs">
+                <div class="tabs">
+                    <button class="tab-button active" data-tab="analysis">Detailní analýza</button>
+                    <button class="tab-button" data-tab="sources">Zdroje a reference</button>
+                    <button class="tab-button" data-tab="perspectives">Alternativní perspektivy</button>
+                    <button class="tab-button" data-tab="responses">Navrhované reakce</button>
+                </div>
+                
+                <div class="tab-content">
+                    <div class="tab-pane active" id="analysis">
+                        <div class="analysis-content">
+                            <h3>Detailní vysvětlení</h3>
+                            <p>{{ result.analysis.detailed_explanation }}</p>
+                            
+                            <h3>Klíčové body</h3>
+                            <ul class="key-points">
+                                {% for point in result.analysis.key_points %}
+                                <li>{{ point }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="tab-pane" id="sources">
+                        <div class="sources-content">
+                            <h3>Použité zdroje</h3>
+                            <ul class="sources-list">
+                                {% for source in result.analysis.sources %}
+                                <li class="source-item">
+                                    <div class="source-name">
+                                        <a href="{{ source.url }}" target="_blank" rel="noopener noreferrer">{{ source.name }}</a>
+                                    </div>
+                                    <div class="source-reliability {{ source.reliability|lower|replace(' ', '-') }}">
+                                        Důvěryhodnost: {{ source.reliability }}
+                                    </div>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="tab-pane" id="perspectives">
+                        <div class="perspectives-content">
+                            <h3>Alternativní pohledy</h3>
+                            {% if result.analysis.alternative_perspectives %}
+                                <ul class="perspectives-list">
+                                    {% for perspective in result.analysis.alternative_perspectives %}
+                                    <li>{{ perspective }}</li>
+                                    {% endfor %}
+                                </ul>
+                            {% else %}
+                                <p>Pro tuto analýzu nejsou k dispozici žádné alternativní perspektivy.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="tab-pane" id="responses">
+                        <div class="responses-content">
+                            <h3>Navrhované reakce</h3>
+                            <div class="responses-list">
+                                {% for response in result.analysis.suggested_responses %}
+                                <div class="response-card">
+                                    <p>{{ response }}</p>
+                                    <div class="response-actions">
+                                        <button class="copy-button" data-response="{{ response }}">Kopírovat</button>
+                                        <div class="share-buttons">
+                                            <button class="share-button twitter">Twitter</button>
+                                            <button class="share-button facebook">Facebook</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <section class="results-actions">
+                <div class="metadata">
+                    <div class="metadata-item">
+                        <span class="metadata-label">Datum analýzy:</span>
+                        <span class="metadata-value">{{ result.timestamp[:10] }}</span>
+                    </div>
+                    <div class="metadata-item">
+                        <span class="metadata-label">Úroveň odbornosti:</span>
+                        <span class="metadata-value">
+                            {% if result.settings.expertise_level == 'basic' %}Základní
+                            {% elif result.settings.expertise_level == 'medium' %}Střední
+                            {% elif result.settings.expertise_level == 'advanced' %}Pokročilá
+                            {% elif result.settings.expertise_level == 'expert' %}Expertní
+                            {% else %}{{ result.settings.expertise_level }}{% endif %}
+                        </span>
+                    </div>
+                    <div class="metadata-item">
+                        <span class="metadata-label">Délka analýzy:</span>
+                        <span class="metadata-value">
+                            {% if result.settings.analysis_length == 'brief' %}Stručná
+                            {% elif result.settings.analysis_length == 'standard' %}Standardní
+                            {% elif result.settings.analysis_length == 'detailed' %}Podrobná
+                            {% elif result.settings.analysis_length == 'exhaustive' %}Vyčerpávající
+                            {% else %}{{ result.settings.analysis_length }}{% endif %}
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="download-button-container">
+                    <a href="/download/{{ result.id }}" class="download-button">
+                        <span class="download-icon">⬇️</span>
+                        <span>Stáhnout PDF</span>
+                    </a>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 Fact-Checking Aplikace. Všechna práva vyhrazena.</p>
+            <div class="footer-links">
+                <a href="#">O projektu</a>
+                <a href="#">Kontakt</a>
+                <a href="#">Podmínky použití</a>
+                <a href="#">Ochrana soukromí</a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fact-Checking Aplikace</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <link rel="icon" href="{{ url_for('static', filename='images/favicon.ico') }}">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="logo-container">
+                <img src="{{ url_for('static', filename='images/logo.svg') }}" alt="Logo" class="logo" onerror="this.src='{{ url_for('static', filename='images/logo-fallback.png') }}'">
+                <h1>Fact-Checking Aplikace</h1>
+            </div>
+            <div class="header-controls">
+                <div class="language-selector">
+                    <select id="language-select">
+                        <option value="cs" selected>Čeština</option>
+                        <option value="en">English</option>
+                        <option value="sk">Slovenčina</option>
+                    </select>
+                </div>
+                <a href="#" class="support-button">
+                    <span class="heart-icon">❤</span>
+                    <span>Podpořit projekt</span>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <div class="container">
+            <section class="upload-section">
+                <h2>Ověřte pravdivost informací</h2>
+                <p class="intro-text">
+                    Nahrajte text, obrázek, audio nebo video k analýze a získejte detailní hodnocení pravdivosti.
+                </p>
+
+                <form action="/analyze" method="post" enctype="multipart/form-data" id="analyze-form">
+                    <div class="input-container">
+                        <textarea name="text" id="text-input" placeholder="Vložte text k ověření..."></textarea>
+                        
+                        <div class="file-upload-container">
+                            <div class="upload-buttons">
+                                <label for="file-upload" class="file-upload-button">
+                                    <span class="icon document-icon">📄</span>
+                                    <span>Nahrát soubor</span>
+                                </label>
+                                <input type="file" id="file-upload" name="file" class="hidden-input">
+                                
+                                <div class="media-buttons">
+                                    <button type="button" class="media-button" id="image-button">
+                                        <span class="icon image-icon">🖼️</span>
+                                        <span>Obrázek</span>
+                                    </button>
+                                    <button type="button" class="media-button" id="audio-button">
+                                        <span class="icon audio-icon">🎤</span>
+                                        <span>Audio</span>
+                                    </button>
+                                    <button type="button" class="media-button" id="video-button">
+                                        <span class="icon video-icon">🎬</span>
+                                        <span>Video</span>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="file-preview" id="file-preview">
+                                <p>Přetáhněte soubor sem nebo použijte tlačítko výše</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="settings-container">
+                        <div class="setting">
+                            <label for="expertise-level">Úroveň odbornosti:</label>
+                            <div class="slider-container">
+                                <input type="range" id="expertise-level" name="expertise_level" min="1" max="4" value="2" class="slider">
+                                <div class="slider-labels">
+                                    <span class="slider-label" data-value="basic">Základní</span>
+                                    <span class="slider-label active" data-value="medium">Střední</span>
+                                    <span class="slider-label" data-value="advanced">Pokročilá</span>
+                                    <span class="slider-label" data-value="expert">Expertní</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="setting">
+                            <label for="analysis-length">Délka analýzy:</label>
+                            <div class="slider-container">
+                                <input type="range" id="analysis-length" name="analysis_length" min="1" max="4" value="2" class="slider">
+                                <div class="slider-labels">
+                                    <span class="slider-label" data-value="brief">Stručná</span>
+                                    <span class="slider-label active" data-value="standard">Standardní</span>
+                                    <span class="slider-label" data-value="detailed">Podrobná</span>
+                                    <span class="slider-label" data-value="exhaustive">Vyčerpávající</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="analyze-button" id="analyze-button">
+                        <span>Analyzovat</span>
+                    </button>
+                </form>
+            </section>
+
+            <section class="info-section">
+                <div class="info-cards">
+                    <div class="info-card">
+                        <div class="info-icon">🔍</div>
+                        <h3>Přesná analýza</h3>
+                        <p>Naše aplikace analyzuje obsah pomocí pokročilých algoritmů a porovnává informace s důvěryhodnými zdroji.</p>
+                    </div>
+                    
+                    <div class="info-card">
+                        <div class="info-icon">📊</div>
+                        <h3>Detailní hodnocení</h3>
+                        <p>Získáte podrobné hodnocení pravdivosti s vysvětlením, zdroji a alternativními perspektivami.</p>
+                    </div>
+                    
+                    <div class="info-card">
+                        <div class="info-icon">💬</div>
+                        <h3>Připravené reakce</h3>
+                        <p>Aplikace vám nabídne připravené reakce, které můžete použít při sdílení výsledků analýzy.</p>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 Fact-Checking Aplikace. Všechna práva vyhrazena.</p>
+            <div class="footer-links">
+                <a href="#">O projektu</a>
+                <a href="#">Kontakt</a>
+                <a href="#">Podmínky použití</a>
+                <a href="#">Ochrana soukromí</a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
