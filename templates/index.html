@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FactCheck - Ověřování faktů pomocí umělé inteligence</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+</head>
+<body>
+    {% extends "base.html" %}
+    
+    {% block content %}
+    <section class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <h1>Ověřujte fakta pomocí umělé inteligence</h1>
+                <p>FactCheck vám pomůže rozlišit pravdu od lži, fakta od manipulace. Využijte sílu umělé inteligence pro ověřování informací a zvyšování mediální gramotnosti.</p>
+                <div class="hero-buttons">
+                    <a href="{{ url_for('factcheck.index') }}" class="btn btn-primary">Ověřit tvrzení</a>
+                    <a href="{{ url_for('education.index') }}" class="btn btn-secondary">Vzdělávat se</a>
+                </div>
+            </div>
+            <div class="hero-image">
+                <img src="{{ url_for('static', filename='images/hero-illustration.svg') }}" alt="FactCheck ilustrace">
+            </div>
+        </div>
+    </section>
+    
+    <section class="features">
+        <div class="container">
+            <div class="section-header">
+                <h2>Jak vám můžeme pomoci</h2>
+                <p>FactCheck nabízí komplexní nástroje pro boj s dezinformacemi</p>
+            </div>
+            
+            <div class="features-grid">
+                <div class="feature-card animate-on-scroll">
+                    <div class="feature-icon">
+                        <i class="fas fa-search"></i>
+                    </div>
+                    <h3>Ověřování tvrzení</h3>
+                    <p>Zadejte jakékoliv tvrzení a naše umělá inteligence ho analyzuje, vyhodnotí jeho pravdivost a poskytne vám podrobné vysvětlení.</p>
+                </div>
+                
+                <div class="feature-card animate-on-scroll">
+                    <div class="feature-icon">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <h3>Identifikace manipulace</h3>
+                    <p>Odhalíme logické chyby a manipulativní techniky používané v tvrzeních, abyste se nenechali oklamat.</p>
+                </div>
+                
+                <div class="feature-card animate-on-scroll">
+                    <div class="feature-icon">
+                        <i class="fas fa-graduation-cap"></i>
+                    </div>
+                    <h3>Vzdělávání</h3>
+                    <p>Naučte se rozpoznávat dezinformace a zvyšte svou mediální gramotnost pomocí našich vzdělávacích materiálů a kvízů.</p>
+                </div>
+                
+                <div class="feature-card animate-on-scroll">
+                    <div class="feature-icon">
+                        <i class="fas fa-share-alt"></i>
+                    </div>
+                    <h3>Sdílení výsledků</h3>
+                    <p>Sdílejte výsledky analýz s ostatními a přispějte k šíření ověřených informací ve svém okolí.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <section class="how-it-works">
+        <div class="container">
+            <div class="section-header">
+                <h2>Jak to funguje</h2>
+                <p>Jednoduchý proces ověření faktů ve třech krocích</p>
+            </div>
+            
+            <div class="steps">
+                <div class="step animate-on-scroll">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <h3>Zadejte tvrzení</h3>
+                        <p>Vložte tvrzení, které chcete ověřit, do našeho systému. Může jít o jakékoliv faktické tvrzení z médií, sociálních sítí nebo jiných zdrojů.</p>
+                    </div>
+                </div>
+                
+                <div class="step animate-on-scroll">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <h3>Umělá inteligence analyzuje</h3>
+                        <p>Náš systém využívá pokročilé modely umělé inteligence k analýze tvrzení, vyhledávání relevantních informací a vyhodnocení pravdivosti.</p>
+                    </div>
+                </div>
+                
+                <div class="step animate-on-scroll">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <h3>Získejte výsledek</h3>
+                        <p>Obdržíte podrobnou analýzu s verdiktem o pravdivosti, vysvětlením, identifikací případných logických chyb a manipulativních technik.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="cta-button">
+                <a href="{{ url_for('factcheck.index') }}" class="btn btn-primary">Vyzkoušet nyní</a>
+            </div>
+        </div>
+    </section>
+    
+    <section class="example-analysis">
+        <div class="container">
+            <div class="section-header">
+                <h2>Ukázka analýzy</h2>
+                <p>Podívejte se, jak vypadá výsledek analýzy tvrzení</p>
+            </div>
+            
+            <div class="example-card">
+                <div class="example-claim">
+                    <h3>Analyzované tvrzení:</h3>
+                    <p>"Očkování proti COVID-19 způsobuje magnetismus v místě vpichu."</p>
+                </div>
+                
+                <div class="example-result">
+                    <div class="verdict verdict-false">
+                        <span class="verdict-label">Verdikt:</span>
+                        <span class="verdict-value">Nepravdivé</span>
+                    </div>
+                    
+                    <div class="confidence">
+                        <span class="confidence-label">Jistota:</span>
+                        <div class="confidence-bar">
+                            <div class="confidence-fill" style="width: 95%;"></div>
+                        </div>
+                        <span class="confidence-value">95%</span>
+                    </div>
+                    
+                    <div class="explanation">
+                        <h4>Vysvětlení:</h4>
+                        <p>Tvrzení, že očkování proti COVID-19 způsobuje magnetismus v místě vpichu, je nepravdivé. Vakcíny proti COVID-19 neobsahují žádné kovové nebo magnetické složky v množství, které by mohlo způsobit přitahování magnetických předmětů. Složení vakcín je veřejně dostupné a bylo důkladně testováno. Zdánlivý "magnetický efekt" lze vysvětlit přilnavostí kůže způsobenou potem, mastnotou nebo jednoduchými fyzikálními jevy jako je povrchové napětí.</p>
+                    </div>
+                    
+                    <div class="logical-fallacies">
+                        <h4>Logické chyby:</h4>
+                        <ul>
+                            <li>
+                                <span class="fallacy-type">Post hoc ergo propter hoc</span>
+                                <p>Předpokládá se, že pokud se magnetismus objevil po očkování, musí být způsoben očkováním.</p>
+                            </li>
+                            <li>
+                                <span class="fallacy-type">Anekdotická evidence</span>
+                                <p>Tvrzení se opírá o jednotlivé případy a videa na sociálních sítích, nikoliv o systematický výzkum.</p>
+                            </li>
+                        </ul>
+                    </div>
+                    
+                    <div class="sources">
+                        <h4>Zdroje:</h4>
+                        <ul>
+                            <li><a href="#">Složení vakcín proti COVID-19 (WHO)</a></li>
+                            <li><a href="#">Studie o bezpečnosti vakcín (CDC)</a></li>
+                            <li><a href="#">Vysvětlení "magnetického" efektu (Univerzita Karlova)</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <section class="education-preview">
+        <div class="container">
+            <div class="section-header">
+                <h2>Vzdělávejte se</h2>
+                <p>Zvyšte svou mediální gramotnost a naučte se rozpoznávat dezinformace</p>
+            </div>
+            
+            <div class="education-topics">
+                <div class="topic-card animate-on-scroll">
+                    <div class="topic-icon">
+                        <i class="fas fa-book-reader"></i>
+                    </div>
+                    <h3>Mediální gramotnost</h3>
+                    <p>Základní principy kritického hodnocení mediálních sdělení</p>
+                    <a href="{{ url_for('education.media_literacy') }}" class="btn btn-text">Zjistit více</a>
+                </div>
+                
+                <div class="topic-card animate-on-scroll">
+                    <div class="topic-icon">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <h3>Dezinformace</h3>
+                    <p>Jak rozpoznat falešné zprávy a dezinformační kampaně</p>
+                    <a href="{{ url_for('education.disinformation') }}" class="btn btn-text">Zjistit více</a>
+                </div>
+                
+                <div class="topic-card animate-on-scroll">
+                    <div class="topic-icon">
+                        <i class="fas fa-balance-scale"></i>
+                    </div>
+                    <h3>Logické chyby</h3>
+                    <p>Nejčastější logické chyby v argumentaci a jak je odhalit</p>
+                    <a href="{{ url_for('education.logical_fallacies') }}" class="btn btn-text">Zjistit více</a>
+                </div>
+            </div>
+            
+            <div class="cta-button">
+                <a href="{{ url_for('education.index') }}" class="btn btn-secondary">Prozkoumat vzdělávací sekci</a>
+            </div>
+        </div>
+    </section>
+    
+    <section class="support-preview">
+        <div class="container">
+            <div class="support-content">
+                <div class="support-text">
+                    <h2>Podpořte náš projekt</h2>
+                    <p>Pomozte nám v boji proti dezinformacím a přispějte k informovanější společnosti. Vaše podpora nám umožní dále rozvíjet naše služby a vzdělávací programy.</p>
+                    <a href="{{ url_for('support.index') }}" class="btn btn-primary">Podpořit projekt</a>
+                </div>
+                
+                <div class="support-image">
+                    <img src="{{ url_for('static', filename='images/support-illustration.svg') }}" alt="Podpora projektu">
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <section class="testimonials">
+        <div class="container">
+            <div class="section-header">
+                <h2>Co říkají naši uživatelé</h2>
+                <p>Přečtěte si, co si o naší službě myslí ostatní</p>
+            </div>
+            
+            <div class="testimonials-slider">
+                <div class="testimonial-card">
+                    <div class="testimonial-content">
+                        <p>"FactCheck mi pomohl naučit se lépe rozpoznávat dezinformace a manipulativní techniky. Díky tomu se cítím jistější při konzumaci zpráv a informací na sociálních sítích."</p>
+                    </div>
+                    <div class="testimonial-author">
+                        <div class="author-avatar">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div class="author-info">
+                            <div class="author-name">Jan Novák</div>
+                            <div class="author-role">Student</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="testimonial-card">
+                    <div class="testimonial-content">
+                        <p>"Jako učitelka používám FactCheck při výuce mediální výchovy. Studenti se díky tomu učí kriticky myslet a ověřovat informace, což považuji za klíčovou dovednost v dnešní době."</p>
+                    </div>
+                    <div class="testimonial-author">
+                        <div class="author-avatar">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div class="author-info">
+                            <div class="author-name">Petra Svobodová</div>
+                            <div class="author-role">Učitelka</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="testimonial-card">
+                    <div class="testimonial-content">
+                        <p>"V dnešní době plné dezinformací je služba jako FactCheck nezbytná. Pravidelně ji používám k ověřování zpráv, které vidím na sociálních sítích, a doporučuji ji všem svým přátelům a rodině."</p>
+                    </div>
+                    <div class="testimonial-author">
+                        <div class="author-avatar">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div class="author-info">
+                            <div class="author-name">Martin Dvořák</div>
+                            <div class="author-role">Novinář</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="testimonial-controls">
+                <button class="testimonial-prev"><i class="fas fa-chevron-left"></i></button>
+                <div class="testimonial-dots">
+                    <span class="dot active"></span>
+                    <span class="dot"></span>
+                    <span class="dot"></span>
+                </div>
+                <button class="testimonial-next"><i class="fas fa-chevron-right"></i></button>
+            </div>
+        </div>
+    </section>
+    
+    <section class="cta">
+        <div class="container">
+            <div class="cta-content">
+                <h2>Začněte ověřovat fakta ještě dnes</h2>
+                <p>Připojte se k tisícům uživatelů, kteří již využívají FactCheck k boji proti dezinformacím.</p>
+                <div class="cta-buttons">
+                    <a href="{{ url_for('factcheck.index') }}" class="btn btn-primary">Ověřit tvrzení</a>
+                    <a href="{{ url_for('auth.register') }}" class="btn btn-secondary">Vytvořit účet</a>
+                </div>
+            </div>
+        </div>
+    </section>
+    {% endblock %}
+    
+    {% block scripts %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Testimonial Slider
+            const testimonials = document.querySelectorAll('.testimonial-card');
+            const dots = document.querySelectorAll('.testimonial-dots .dot');
+            const prevButton = document.querySelector('.testimonial-prev');
+            const nextButton = document.querySelector('.testimonial-next');
+            
+            let currentSlide = 0;
+            
+            const showSlide = function(index) {
+                // Hide all slides
+                testimonials.forEach(slide => {
+                    slide.style.display = 'none';
+                });
+                
+                // Remove active class from all dots
+                dots.forEach(dot => {
+                    dot.classList.remove('active');
+                });
+                
+                // Show current slide and activate dot
+                testimonials[index].style.display = 'block';
+                dots[index].classList.add('active');
+            };
+            
+            // Initialize
+            showSlide(currentSlide);
+            
+            // Next button
+            nextButton.addEventListener('click', function() {
+                currentSlide = (currentSlide + 1) % testimonials.length;
+                showSlide(currentSlide);
+            });
+            
+            // Previous button
+            prevButton.addEventListener('click', function() {
+                currentSlide = (currentSlide - 1 + testimonials.length) % testimonials.length;
+                showSlide(currentSlide);
+            });
+            
+            // Dot navigation
+            dots.forEach((dot, index) => {
+                dot.addEventListener('click', function() {
+                    currentSlide = index;
+                    showSlide(currentSlide);
+                });
+            });
+            
+            // Auto-advance slides every 5 seconds
+            setInterval(function() {
+                currentSlide = (currentSlide + 1) % testimonials.length;
+                showSlide(currentSlide);
+            }, 5000);
+            
+            // Animation on scroll
+            const animateElements = document.querySelectorAll('.animate-on-scroll');
+            
+            const checkIfInView = function() {
+                animateElements.forEach(element => {
+                    const elementTop = element.getBoundingClientRect().top;
+                    const elementVisible = 150;
+                    
+                    if (elementTop < window.innerHeight - elementVisible) {
+                        element.classList.add('active');
+                    }
+                });
+            };
+            
+            // Check on load
+            checkIfInView();
+            
+            // Check on scroll
+            window.addEventListener('scroll', checkIfInView);
+        });
+    </script>
+    {% endblock %}
+</body>
+</html>
