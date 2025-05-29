@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+
+{% block title %}FactCheck - Ověřování faktů pomocí umělé inteligence{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <div class="container">
+        <div class="hero-content">
+            <h1>Ověřování faktů pomocí umělé inteligence</h1>
+            <p>Nástroj pro rychlou a spolehlivou analýzu tvrzení s využitím pokročilých AI modelů.</p>
+            <div class="hero-buttons">
+                <a href="{{ url_for('factcheck.index') }}" class="btn btn-primary">Ověřit tvrzení</a>
+                <a href="{{ url_for('education.index') }}" class="btn btn-secondary">Vzdělávací materiály</a>
+            </div>
+        </div>
+        <div class="hero-image">
+            <img src="{{ url_for('static', filename='images/hero-illustration.svg') }}" alt="Ilustrace ověřování faktů">
+        </div>
+    </div>
+</section>
+
+<section class="features">
+    <div class="container">
+        <h2>Jak to funguje</h2>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <img src="{{ url_for('static', filename='images/icon-input.svg') }}" alt="Ikona vstupu">
+                </div>
+                <h3>Zadejte tvrzení</h3>
+                <p>Vložte tvrzení, které chcete ověřit. Může se jednat o výrok politika, zprávu z médií nebo jakékoliv jiné faktické tvrzení.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <img src="{{ url_for('static', filename='images/icon-analyze.svg') }}" alt="Ikona analýzy">
+                </div>
+                <h3>AI analýza</h3>
+                <p>Náš systém využívá model GPT-4o pro důkladnou analýzu tvrzení, vyhledání důkazů a identifikaci případných logických chyb.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <img src="{{ url_for('static', filename='images/icon-result.svg') }}" alt="Ikona výsledku">
+                </div>
+                <h3>Získejte výsledek</h3>
+                <p>Obdržíte podrobnou analýzu s verdiktem o pravdivosti, vysvětlením a zdroji, které můžete dále zkoumat.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="cta">
+    <div class="container">
+        <div class="cta-content">
+            <h2>Začněte ověřovat fakta ještě dnes</h2>
+            <p>Náš nástroj je dostupný zdarma pro základní použití. Pro pokročilé funkce se můžete stát podporovatelem projektu.</p>
+            <a href="{{ url_for('factcheck.index') }}" class="btn btn-primary">Vyzkoušet zdarma</a>
+        </div>
+    </div>
+</section>
+
+<section class="testimonials">
+    <div class="container">
+        <h2>Co o nás říkají uživatelé</h2>
+        <div class="testimonials-grid">
+            <div class="testimonial-card">
+                <div class="testimonial-content">
+                    <p>"Díky této aplikaci jsem schopen rychle ověřit informace, které vidím na sociálních sítích. Skvělý nástroj pro dnešní dobu dezinformací."</p>
+                </div>
+                <div class="testimonial-author">
+                    <p><strong>Jan Novák</strong>, novinář</p>
+                </div>
+            </div>
+            <div class="testimonial-card">
+                <div class="testimonial-content">
+                    <p>"Používám FactCheck při výuce mediální gramotnosti. Studenti se díky němu učí kriticky myslet a ověřovat informace."</p>
+                </div>
+                <div class="testimonial-author">
+                    <p><strong>Marie Svobodová</strong>, učitelka</p>
+                </div>
+            </div>
+            <div class="testimonial-card">
+                <div class="testimonial-content">
+                    <p>"Jako výzkumník oceňuji hloubkovou analýzu a identifikaci logických chyb v argumentaci. Velmi užitečný nástroj."</p>
+                </div>
+                <div class="testimonial-author">
+                    <p><strong>Petr Dvořák</strong>, akademický pracovník</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
