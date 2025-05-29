@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chyba 500 - Interní chyba serveru | FactCheck</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+</head>
+<body>
+    {% extends "base.html" %}
+    
+    {% block content %}
+    <section class="error-page">
+        <div class="container">
+            <div class="error-content">
+                <div class="error-image">
+                    <img src="{{ url_for('static', filename='images/error-500.svg') }}" alt="Chyba 500">
+                </div>
+                <div class="error-text">
+                    <h1>Interní chyba serveru</h1>
+                    <p>Omlouváme se, ale na serveru došlo k neočekávané chybě. Zkuste to prosím později.</p>
+                    <div class="error-actions">
+                        <a href="{{ url_for('main.index') }}" class="btn btn-primary">Zpět na hlavní stránku</a>
+                        <a href="{{ url_for('factcheck.index') }}" class="btn btn-secondary">Ověřit tvrzení</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    {% endblock %}
+</body>
+</html>

@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+
+{% block title %}FactCheck - Ověřit tvrzení{% endblock %}
+
+{% block content %}
+<section class="factcheck-header">
+    <div class="container">
+        <h1>Ověřit tvrzení</h1>
+        <p>Zadejte tvrzení, které chcete ověřit, a vyberte typ analýzy.</p>
+    </div>
+</section>
+
+<section class="factcheck-form">
+    <div class="container">
+        <form action="{{ url_for('factcheck.analyze') }}" method="post">
+            <div class="form-group">
+                <label for="claim_text">Tvrzení k ověření</label>
+                <textarea id="claim_text" name="claim_text" rows="5" placeholder="Např. 'Česká republika má 10,7 milionu obyvatel.'" required></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label for="analysis_type">Typ analýzy</label>
+                <div class="analysis-types">
+                    <div class="analysis-type-card">
+                        <input type="radio" id="quick" name="analysis_type" value="quick" checked>
+                        <label for="quick">
+                            <h3>Rychlá analýza</h3>
+                            <p>Základní analýza s verdiktem a krátkým vysvětlením</p>
+                            <span class="analysis-time">~10 sekund</span>
+                        </label>
+                    </div>
+                    
+                    <div class="analysis-type-card">
+                        <input type="radio" id="standard" name="analysis_type" value="standard">
+                        <label for="standard">
+                            <h3>Standardní analýza</h3>
+                            <p>Podrobná analýza s verdiktem, vysvětlením a identifikací logických chyb</p>
+                            <span class="analysis-time">~20 sekund</span>
+                        </label>
+                    </div>
+                    
+                    <div class="analysis-type-card {% if not session.get('is_supporter', False) %}disabled{% endif %}">
+                        <input type="radio" id="detailed" name="analysis_type" value="detailed" {% if not session.get('is_supporter', False) %}disabled{% endif %}>
+                        <label for="detailed">
+                            <h3>Detailní analýza</h3>
+                            <p>Velmi podrobná analýza s kontextem, alternativními interpretacemi a detailním vysvětlením</p>
+                            <span class="analysis-time">~30 sekund</span>
+                            {% if not session.get('is_supporter', False) %}
+                                <span class="supporter-only">Pouze pro podporovatele</span>
+                            {% endif %}
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            {% if not openai_api_key_set %}
+                <div class="api-warning">
+                    <p>Varování: API klíč OpenAI není nastaven. Analýza tvrzení nebude fungovat.</p>
+                </div>
+            {% endif %}
+            
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary" {% if not openai_api_key_set %}disabled{% endif %}>Analyzovat tvrzení</button>
+            </div>
+        </form>
+    </div>
+</section>
+
+<section class="factcheck-info">
+    <div class="container">
+        <h2>Jak funguje ověřování faktů</h2>
+        <div class="info-grid">
+            <div class="info-card">
+                <h3>Umělá inteligence GPT-4o</h3>
+                <p>Pro analýzu tvrzení používáme nejmodernější model GPT-4o od společnosti OpenAI, který dokáže zpracovat a vyhodnotit komplexní informace.</p>
+            </div>
+            <div class="info-card">
+                <h3>Identifikace logických chyb</h3>
+                <p>Systém automaticky identifikuje logické chyby v argumentaci, jako jsou falešné dilema, argument ad hominem nebo chybná kauzalita.</p>
+            </div>
+            <div class="info-card">
+                <h3>Manipulativní techniky</h3>
+                <p>Analýza odhaluje manipulativní techniky jako je citové vydírání, vyvolávání strachu nebo zkreslování faktů.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% if not session.get('user_id') %}
+<section class="cta">
+    <div class="container">
+        <div class="cta-content">
+            <h2>Přihlaste se pro více funkcí</h2>
+            <p>Přihlášení uživatelé mají přístup k historii analýz a dalším pokročilým funkcím.</p>
+            <div class="cta-buttons">
+                <a href="{{ url_for('auth.login') }}" class="btn btn-primary">Přihlásit se</a>
+                <a href="{{ url_for('auth.register') }}" class="btn btn-secondary">Registrovat se</a>
+            </div>
+        </div>
+    </div>
+</section>
+{% endif %}
+{% endblock %}
