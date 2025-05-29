@@ -5,9 +5,13 @@ Tento soubor slouží jako vstupní bod aplikace.
 """
 
 import os
+from dotenv import load_dotenv
 from flask import Flask, render_template, request, redirect, url_for, flash, session
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
+
+# Načtení proměnných prostředí z .env souboru
+load_dotenv()
 
 # Inicializace databáze
 db = SQLAlchemy()
@@ -58,3 +62,4 @@ if __name__ == '__main__':
     # Spuštění aplikace
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=app.config['DEBUG'])
+
