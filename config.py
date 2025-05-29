@@ -3,17 +3,15 @@ Konfigurační soubor pro aplikaci FactCheck.
 
 Tento soubor obsahuje konfigurační proměnné pro aplikaci.
 """
-
 import os
-from dotenv import load_dotenv
 
-# Načtení proměnných z .env souboru
-load_dotenv()
-
-# Základní konfigurace
+# Vždy načítat pouze z prostředí, nikdy z .env
 DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 SECRET_KEY = os.environ.get('SECRET_KEY', 'faktchek-tajny-klic-pro-vyvoj')
 OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', '')
+
+if not OPENAI_API_KEY:
+    raise RuntimeError("OPENAI_API_KEY není nastaven. Nastavte ho v prostředí (např. v Render.com dashboardu)!")
 
 # Konfigurace databáze
 SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', 'sqlite:///factcheck.db')
@@ -27,10 +25,10 @@ APP_AUTHOR = 'FactCheck Team'
 APP_CONTACT_EMAIL = 'info@factcheck.cz'
 
 # Konfigurace OpenAI
-OPENAI_MODEL = os.environ.get('OPENAI_MODEL', 'gpt-3.5-turbo')  # Výchozí model změněn na dostupnější
+OPENAI_MODEL = os.environ.get('OPENAI_MODEL', 'gpt-3.5-turbo')
 OPENAI_TEMPERATURE = float(os.environ.get('OPENAI_TEMPERATURE', '0.1'))
 OPENAI_MAX_TOKENS = int(os.environ.get('OPENAI_MAX_TOKENS', '2000'))
-OPENAI_API_VERSION = os.environ.get('OPENAI_API_VERSION', '2023-05-15')  # Přidána verze API
+OPENAI_API_VERSION = os.environ.get('OPENAI_API_VERSION', '2023-05-15')
 
 # Konfigurace analýzy
 ANALYSIS_TYPES = {
@@ -76,21 +74,17 @@ SUPPORT_LEVELS = {
         'benefits': [
             'Přístup k detailní analýze',
             'Bez reklam',
-            'Historie analýz (až 50 položek)',
-            'Export výsledků do PDF'
+            'Historie analýz (až 50 položek)'
         ]
     },
     'gold': {
         'name': 'Zlatý podporovatel',
-        'price': 399,
+        'price': 499,
         'period': 'měsíčně',
         'benefits': [
-            'Přístup k detailní analýze',
+            'Přístup ke všem funkcím',
             'Bez reklam',
-            'Neomezená historie analýz',
-            'Export výsledků do PDF',
-            'Prioritní zpracování',
-            'Přístup k beta funkcím'
+            'Neomezená historie analýz'
         ]
     }
 }
