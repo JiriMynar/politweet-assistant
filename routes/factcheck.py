@@ -31,13 +31,28 @@ def analyze():
     # Získání OpenAI služby
     openai_service = None
     try:
-        openai_api_key = os.environ.get('OPENAI_API_KEY')
+        # Načtení konfigurace z aplikace
+        openai_api_key = current_app.config['OPENAI_API_KEY']
+        openai_model = current_app.config['OPENAI_MODEL']
+        openai_api_version = current_app.config.get('OPENAI_API_VERSION')
+        
+        # Kontrola existence API klíče
         if not openai_api_key:
-            flash('API klíč není nastaven. Kontaktujte správce aplikace.', 'error')
+            flash('API klíč není nastaven. Kontaktujte správce aplikace nebo nastavte OPENAI_API_KEY v .env souboru.', 'error')
             return redirect(url_for('factcheck.index'))
         
-        openai_service = OpenAIService(openai_api_key)
+        # Inicializace OpenAI služby
+        openai_service = OpenAIService(
+            api_key=openai_api_key,
+            model=openai_model,
+            api_version=openai_api_version
+        )
+    except ValueError as e:
+        # Zachycení chyb validace API klíče
+        flash(f'Neplatný API klíč: {str(e)}', 'error')
+        return redirect(url_for('factcheck.index'))
     except Exception as e:
+        # Zachycení ostatních chyb
         flash(f'Chyba při inicializaci OpenAI služby: {str(e)}', 'error')
         return redirect(url_for('factcheck.index'))
     
@@ -48,6 +63,13 @@ def analyze():
         
         # Analýza tvrzení pomocí OpenAI API
         result = openai_service.analyze_claim(claim_text, analysis_type)
+        
+        # Kontrola, zda analýza proběhla úspěšně
+        if result.get('verdict') == 'nelze ověřit' and result.get('confidence') == 0:
+            error_message = result.get('explanation', 'Neznámá chyba při analýze')
+            if 'Nepodařilo se provést analýzu' in error_message:
+                flash(error_message, 'error')
+                return redirect(url_for('factcheck.index'))
         
         # Vytvoření záznamu v databázi
         analysis = Analysis.from_openai_response(claim_text, result, analysis_type, user_id)
