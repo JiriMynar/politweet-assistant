@@ -5,6 +5,10 @@ Tento soubor obsahuje konfigurační proměnné pro aplikaci.
 """
 
 import os
+from dotenv import load_dotenv
+
+# Načtení proměnných z .env souboru
+load_dotenv()
 
 # Základní konfigurace
 DEBUG = os.environ.get('DEBUG', 'True') == 'True'
@@ -23,9 +27,10 @@ APP_AUTHOR = 'FactCheck Team'
 APP_CONTACT_EMAIL = 'info@factcheck.cz'
 
 # Konfigurace OpenAI
-OPENAI_MODEL = os.environ.get('OPENAI_MODEL', 'gpt-4')
+OPENAI_MODEL = os.environ.get('OPENAI_MODEL', 'gpt-3.5-turbo')  # Výchozí model změněn na dostupnější
 OPENAI_TEMPERATURE = float(os.environ.get('OPENAI_TEMPERATURE', '0.1'))
 OPENAI_MAX_TOKENS = int(os.environ.get('OPENAI_MAX_TOKENS', '2000'))
+OPENAI_API_VERSION = os.environ.get('OPENAI_API_VERSION', '2023-05-15')  # Přidána verze API
 
 # Konfigurace analýzy
 ANALYSIS_TYPES = {
