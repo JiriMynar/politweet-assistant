@@ -31,7 +31,7 @@ APP_CONTACT_EMAIL = 'info@factcheck.cz'
 # Konfigurace OpenAI
 OPENAI_MODEL = os.environ.get('OPENAI_MODEL', 'gpt-4')
 OPENAI_TEMPERATURE = float(os.environ.get('OPENAI_TEMPERATURE', '0.1'))
-OPENAI_MAX_TOKENS = int(os.environ.get('OPENAI_MAX_TOKENS', '2000'))
+OPENAI_MAX_TOKENS = int(os.environ.get('OPENAI_MAX_TOKENS', '10000'))
 
 # Konfigurace analýzy
 ANALYSIS_TYPES = {
